@@ -11,4 +11,20 @@ void UART_AddCommands();
 void UART_RunEverySecond();
 
 // used to detect uart reinit/takeover by driver
-extern int g_uart_init_counter;
+int get_g_uart_init_counter();
+
+int UART_GetSelectedPortIndex();
+
+
+//new with uart selection
+void UART_InitReceiveRingBufferEx(int auartindex, int size);
+int UART_GetDataSizeEx(int auartindex);
+byte UART_GetByteEx(int auartindex, int idx);
+void UART_ConsumeBytesEx(int auartindex, int idx);
+void UART_SendByteEx(int auartindex, byte b);
+int UART_InitUARTEx(int auartindex, int baud, int parity);
+void UART_LogBufState(int auartindex);
+
+//index of UART port 
+#define UART_PORT_INDEX_0 0
+#define UART_PORT_INDEX_1 1
