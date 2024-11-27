@@ -1110,7 +1110,7 @@ void TuyaMCU_ApplyMapping(tuyaMCUMapping_t* mapping, int dpID, int value) {
 	if (mapping->channel == -1) {
 		return;
 	}
-
+	int fusemovingavg = 0;
 	// map value depending on channel type
 	switch (CHANNEL_GetType(mapping->channel))
 	{
@@ -1126,6 +1126,16 @@ void TuyaMCU_ApplyMapping(tuyaMCUMapping_t* mapping, int dpID, int value) {
 		// map TuyaMCU's dimmer range to OpenBK7231T_App's dimmer range 0..1000
 		mappedValue = ((value - g_dimmerRangeMin) * 1000) / (g_dimmerRangeMax - g_dimmerRangeMin);
 		break;
+	case ChType_Current_div100:
+		fusemovingavg = 1;
+	case ChType_Current_div1000:
+		fusemovingavg = 1;
+	case ChType_Power:
+		fusemovingavg = 1;
+	case ChType_Power_div10:
+		fusemovingavg = 1;
+	case ChType_Power_div100:
+		fusemovingavg = 1;
 	default:
 		break;
 	}
@@ -1139,7 +1149,7 @@ void TuyaMCU_ApplyMapping(tuyaMCUMapping_t* mapping, int dpID, int value) {
 
 	mapping->prevValue = mappedValue;
 
-	CHANNEL_Set(mapping->channel, mappedValue * mapping->mult, 0);
+	CHANNEL_Set_Ex(mapping->channel, mappedValue * mapping->mult, 0, fusemovingavg);
 }
 
 bool TuyaMCU_IsChannelUsedByTuyaMCU(int channel) {
@@ -1603,13 +1613,13 @@ void TuyaMCU_ParseStateMessage(const byte* data, int len) {
 					if (sectorLen == 8 || sectorLen == 10) {
 						// voltage
 						iVal = data[ofs + 0 + 4] << 8 | data[ofs + 1 + 4];
-						CHANNEL_SetFirstChannelByType(ChType_Voltage_div10, iVal);
+						CHANNEL_SetFirstChannelByType(ChType_Voltage_div10, iVal, 0);
 						// current
 						iVal = data[ofs + 3 + 4] << 8 | data[ofs + 4 + 4];
-						CHANNEL_SetFirstChannelByType(ChType_Current_div1000, iVal);
+						CHANNEL_SetFirstChannelByType(ChType_Current_div1000, iVal, 1);
 						// power
 						iVal = data[ofs + 6 + 4] << 8 | data[ofs + 7 + 4];
-						CHANNEL_SetFirstChannelByType(ChType_Power, iVal);
+						CHANNEL_SetFirstChannelByType(ChType_Power, iVal, 1);
 					}
 					else {
 
@@ -1627,10 +1637,10 @@ void TuyaMCU_ParseStateMessage(const byte* data, int len) {
 						//CHANNEL_SetFirstChannelByType(QQQQQQ, iVal);
 						// 06 46 = 1606 => A x 100? ?
 						iVal = data[ofs + 11 + 4] << 8 | data[ofs + 12 + 4];
-						CHANNEL_SetFirstChannelByType(ChType_Current_div1000, iVal);
+						CHANNEL_SetFirstChannelByType(ChType_Current_div1000, iVal, 1);
 						// Voltage?
 						iVal = data[ofs + 13 + 4] << 8 | data[ofs + 14 + 4];
-						CHANNEL_SetFirstChannelByType(ChType_Voltage_div10, iVal);
+						CHANNEL_SetFirstChannelByType(ChType_Voltage_div10, iVal, 0);
 					}
 				}
 				break;

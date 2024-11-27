@@ -637,12 +637,13 @@ void NEW_button_init(pinButton_s* handle, uint8_t(*pin_level)(void* self), uint8
 	handle->button_level = handle->hal_button_Level(handle);
 	handle->active_level = active_level;
 }
-void CHANNEL_SetFirstChannelByType(int requiredType, int newVal) {
+
+void CHANNEL_SetFirstChannelByType(int requiredType, int newVal, int ausemovingavg) {
 	int i;
 
 	for (i = 0; i < CHANNEL_MAX; i++) {
 		if (CHANNEL_GetType(i) == requiredType) {
-			CHANNEL_Set(i, newVal, 0);
+			CHANNEL_Set_Ex(i, newVal, 0, ausemovingavg);
 			return;
 		}
 	}
@@ -1329,7 +1330,7 @@ void CHANNEL_Set_FloatPWM(int ch, float fVal, int iFlags) {
 		}
 	}
 }
-void CHANNEL_Set(int ch, int iVal, int iFlags) {
+void CHANNEL_Set_Ex(int ch, int iVal, int iFlags, int ausemovingavg) {
 	int prevValue;
 	int bForce;
 	int bSilent;
@@ -1375,10 +1376,20 @@ void CHANNEL_Set(int ch, int iVal, int iFlags) {
 	if (bSilent == 0) {
 		addLogAdv(LOG_INFO, LOG_FEATURE_GENERAL, "CHANNEL_Set channel %i has changed to %i (flags %i)\n\r", ch, iVal, iFlags);
 	}
+	#ifdef movingaverage
+	addLogAdv(LOG_INFO, LOG_FEATURE_GENERAL, "CHANNEL_Set debug channel %i has changed to %i (flags %i)\n\r", ch, iVal, iFlags);
+	if (ausemovingavg) {
+		iVal=XJ_MovingAverage_int(prevValue, iVal);
+	}
+	#endif
 	g_channelValues[ch] = iVal;
 
 	Channel_OnChanged(ch, prevValue, iFlags);
 }
+void CHANNEL_Set(int ch, int iVal, int iFlags) {
+	CHANNEL_Set_Ex(ch, iVal, iFlags, 0);
+}
+
 void CHANNEL_AddClamped(int ch, int iVal, int min, int max, int bWrapInsteadOfClamp) {
 #if 0
 	int prevValue;
@@ -2380,6 +2391,52 @@ static commandResult_t showgpi(const void* context, const char* cmd, const char*
 	return CMD_RES_OK;
 }
 
+#ifdef movingaverage
+static int movingavg_cnt = 0;
+static commandResult_t XJ_MovingAvgSet(const void* context, const char* cmd,
+	const char* args, int cmdFlags) {
+	Tokenizer_TokenizeString(args, 0);
+	if (Tokenizer_CheckArgsCountAndPrintWarning(cmd, 1)) {
+		return CMD_RES_NOT_ENOUGH_ARGUMENTS;
+	}
+
+	int fval = Tokenizer_GetArgInteger(0);
+	if (fval < 0) {
+		ADDLOG_ERROR(LOG_FEATURE_ENERGYMETER, "%s",
+			CMD_GetResultString(CMD_RES_BAD_ARGUMENT));
+		return CMD_RES_BAD_ARGUMENT;
+	}
+	if (fval <= 1) {
+		addLogAdv(LOG_INFO, LOG_FEATURE_ENERGYMETER, "CalibrateMovingAvg disabled", fval);
+	}
+	else {
+		addLogAdv(LOG_INFO, LOG_FEATURE_ENERGYMETER, "CalibrateMovingAvg set to : %i", fval);
+	}
+	movingavg_cnt = fval;
+	return CMD_RES_OK;
+}
+
+float XJ_MovingAverage_float(float aprevvalue, float aactvalue) {
+	//if aprevvalue not set, return actual 
+	if (aprevvalue <= 0) return aactvalue;
+	if (movingavg_cnt <= 1) return aactvalue;
+	//if aprevvalue set, calculate simple average value
+	float res = (((movingavg_cnt - 1) * aprevvalue + aactvalue) / movingavg_cnt);
+	addLogAdv(LOG_DEBUG, LOG_FEATURE_ENERGYMETER, "XJ_MovingAverage prev: %.2f act: %.2f res: %.2f", aprevvalue, aactvalue, res);
+	return res;
+}
+
+int XJ_MovingAverage_int(int aprevvalue, int aactvalue) {
+	//if aprevvalue not set, return actual 
+	if (aprevvalue <= 0) return aactvalue;
+	if (movingavg_cnt <= 1) return aactvalue;
+	//if aprevvalue set, calculate simple average value
+	int res = (((movingavg_cnt - 1) * aprevvalue + aactvalue) / movingavg_cnt);
+	addLogAdv(LOG_DEBUG, LOG_FEATURE_ENERGYMETER, "XJ_MovingAverage prev: %i act: %i res: %i", aprevvalue, aactvalue, res);
+	return res;
+}
+#endif
+
 void PIN_AddCommands(void)
 {
 	//cmddetail:{"name":"showgpi","args":"NULL",
@@ -2407,6 +2464,13 @@ void PIN_AddCommands(void)
 	//cmddetail:"fn":"CMD_setButtonHoldRepeat","file":"new_pins.c","requires":"",
 	//cmddetail:"examples":""}
 	CMD_RegisterCommand("setButtonHoldRepeat", CMD_setButtonHoldRepeat, NULL);
+#ifdef movingaverage
+	//cmddetail:{"name":"MovingAvgSet","args":"MovingAvg",
+	//cmddetail:"descr":"Moving average value for power and current. <=1 disable, >=2 count of avg values. The calibration is temporary and need to be set at starup.",
+	//cmddetail:"fn":"NULL);","file":"driver/drv_pwrCal.c","requires":"",
+	//cmddetail:"examples":""}
+	CMD_RegisterCommand("MovingAvgSet", XJ_MovingAvgSet, NULL);
+#endif
 #if ALLOW_SSID2
 	//cmddetail:{"name":"setStartupSSIDChannel","args":"[Value]",
 	//cmddetail:"descr":"Sets retain channel number to store last used SSID, 0..MAX_RETAIN_CHANNELS-1, -1 to disable. Suggested channel number is 7 (MAXMAX_RETAIN_CHANNELS-5)",

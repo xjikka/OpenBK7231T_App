@@ -6,6 +6,7 @@
 #include "cmd_local.h"
 #include "../driver/drv_ir.h"
 #include "../driver/drv_uart.h"
+#include "../driver/drv_bl0942.h"
 #include "../driver/drv_public.h"
 #include "../hal/hal_adc.h"
 #include "../hal/hal_flashVars.h"
@@ -874,6 +875,7 @@ void CMD_Init_Delayed() {
 	}
 #if defined(PLATFORM_BEKEN) || defined(WINDOWS) || defined(PLATFORM_BL602) || defined(PLATFORM_ESPIDF)
 	UART_AddCommands();
+	BL0942_AddCommands();
 #endif
 }
 
