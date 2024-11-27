@@ -6,6 +6,6 @@ void BL0942_UART_Init(void);
 void BL0942_UART_RunEverySecond(void);
 void BL0942_SPI_Init(void);
 void BL0942_SPI_RunEverySecond(void);
-void UART_AddCommands();
+void BL0942_AddCommands(void);
 
 #endif

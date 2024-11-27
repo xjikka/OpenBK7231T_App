@@ -350,7 +350,7 @@ static commandResult_t CMD_BL0942opts(const void* context, const char* cmd, cons
   return CMD_RES_OK;
 }
 
-void BL0942_AddCommands() {
+void BL0942_AddCommands(void) {
   //cmddetail:{"name":"BL0942opts","args":"opts",
   //cmddetail:"descr":"BL0942opts 0= default mode (as set in config Flag 26), 3= two BL0942 on both UARTs (bit0 BL0942 on UART1, bit1 BL0942 on UART2)",
   //cmddetail:"fn":"NULL);","file":"driver/drv_pwrCal.c","requires":"",
