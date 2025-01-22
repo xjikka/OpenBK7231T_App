@@ -5,6 +5,8 @@
 
 #define test12321321  321321321
 
+#define movingaverage
+
 typedef enum ioRole_e {
 	//iodetail:{"name":"None",
 	//iodetail:"title":"TODO",
@@ -1389,6 +1391,7 @@ bool CHANNEL_Check(int ch);
 void PIN_SetGenericDoubleClickCallback(void (*cb)(int pinIndex));
 void CHANNEL_ClearAllChannels();
 // CHANNEL_SET_FLAG_*
+void CHANNEL_Set_Ex(int ch, int iVal, int iFlags, int ausemovingaverage);
 void CHANNEL_Set(int ch, int iVal, int iFlags);
 void CHANNEL_SetSmart(int ch, float fVal, int iFlags);
 void CHANNEL_Set_FloatPWM(int ch, float fVal, int iFlags);
@@ -1403,6 +1406,7 @@ bool CHANNEL_IsPowerRelayChannel(int ch);
 // See: enum channelType_t
 void CHANNEL_SetType(int ch, int type);
 int CHANNEL_GetType(int ch);
+void CHANNEL_SetFirstChannelByTypeEx(int requiredType, int newVal, int ausemovingaverage);
 void CHANNEL_SetFirstChannelByType(int requiredType, int newVal);
 // CHANNEL_SET_FLAG_*
 void CHANNEL_SetAll(int iVal, int iFlags);
@@ -1442,6 +1446,11 @@ extern const char* g_channelTypeNames[];
 #if ALLOW_SSID2
 int FV_GetStartupSSID_StoredValue(int adefault);
 void FV_UpdateStartupSSIDIfChanged_StoredValue(int assidindex);
+#endif
+
+#ifdef movingaverage
+float XJ_MovingAverage_float(float aprevvalue, float aactvalue);
+int XJ_MovingAverage_int(int aprevvalue, int aactvalue);
 #endif
 
 #endif
