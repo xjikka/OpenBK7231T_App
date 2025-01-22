@@ -6,6 +6,9 @@
 #include "cmd_local.h"
 #include "../driver/drv_ir.h"
 #include "../driver/drv_uart.h"
+#if ENABLE_DRIVER_BL0942
+#include "../driver/drv_bl0942.h"
+#endif
 #include "../driver/drv_public.h"
 #include "../hal/hal_adc.h"
 #include "../hal/hal_flashVars.h"
@@ -475,7 +478,7 @@ static commandResult_t CMD_SafeMode(const void* context, const char* cmd, const 
 void CMD_UARTConsole_Init() {
 #if PLATFORM_BEKEN
 	UART_InitUART(115200, 0);
-	cmd_uartInitIndex = g_uart_init_counter;
+	cmd_uartInitIndex = get_g_uart_init_counter;
 	UART_InitReceiveRingBuffer(512);
 #endif
 }
@@ -518,7 +521,7 @@ void CMD_UARTConsole_Run() {
 void CMD_RunUartCmndIfRequired() {
 #if PLATFORM_BEKEN
 	if (CFG_HasFlag(OBK_FLAG_CMD_ACCEPT_UART_COMMANDS)) {
-		if (cmd_uartInitIndex && cmd_uartInitIndex == g_uart_init_counter) {
+		if (cmd_uartInitIndex && cmd_uartInitIndex == get_g_uart_init_counter) {
 			CMD_UARTConsole_Run();
 		}
 	}
@@ -898,6 +901,9 @@ void CMD_Init_Delayed() {
 #if defined(PLATFORM_BEKEN) || defined(WINDOWS) || defined(PLATFORM_BL602) || defined(PLATFORM_ESPIDF) \
  || defined(PLATFORM_RTL87X0C)
 	UART_AddCommands();
+#endif
+#if ENABLE_DRIVER_BL0942
+	BL0942_AddCommands();
 #endif
 }
 
