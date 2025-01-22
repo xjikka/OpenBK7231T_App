@@ -1813,10 +1813,11 @@ void doHomeAssistantDiscovery(const char* topic, http_request_t* request) {
 				discoveryQueued = true;
 			}
 		}
+		//BL_SENSORS_IX_1 - mqtt hass discovery using hass_uniq_id_suffix (_b) from drv_bl_shared.c
 		if (BL_IsMeteringDeviceIndexActive(BL_SENSORS_IX_1)) {
 			for (i = OBK__FIRST; i <= OBK__LAST; i++)
 			{
-				//BL_SENSORS_IX_1 does not have energy yet
+				//BL_SENSORS_IX_1 does not have energy yet, just base  OBK_VOLTAGE..OBK_POWER_FACTOR
 				if (i < OBK_VOLTAGE) continue;
 				if (i > OBK_POWER_FACTOR) continue;
 				dev_info = hass_init_energy_sensor_device_info(i, 1 /*BL_SENSORS_IX_1*/);
