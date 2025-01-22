@@ -2429,19 +2429,6 @@ static commandResult_t showgpi(const void* context, const char* cmd, const char*
 	return CMD_RES_OK;
 }
 
-static commandResult_t XJ_SysLogEnabled(const void* context, const char* cmd,
-	const char* args, int cmdFlags) {
-	Tokenizer_TokenizeString(args, 0);
-	if (Tokenizer_CheckArgsCountAndPrintWarning(cmd, 1)) {
-		return CMD_RES_NOT_ENOUGH_ARGUMENTS;
-	}
-
-	int fval = Tokenizer_GetArgInteger(0);
-	addLogAdv(LOG_INFO, LOG_FEATURE_MAIN, "SysLog Enabled=", fval);
-	syslogenabled= fval;
-	return CMD_RES_OK;
-}
-
 #ifdef movingaverage
 static int movingavg_cnt = 0;
 static commandResult_t XJ_MovingAvgSet(const void* context, const char* cmd,
