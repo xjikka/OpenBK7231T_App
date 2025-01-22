@@ -20,5 +20,7 @@ void BL_ResetRecivedDataBool();
 #define BL_SENSORS_IX_0 0
 #define BL_SENSORS_IX_1 1
 
+int BL_IsMeteringDeviceIndexActive(int asensdatasetix);
+
 #endif
 

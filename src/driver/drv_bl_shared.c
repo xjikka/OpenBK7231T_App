@@ -69,20 +69,20 @@ energysensdataset_t datasetlist[BL_SENSDATASETS_COUNT] = {
 ,
    { {
        //.hass_dev_class, 	.units,		.name_friendly,			.name_mqtt,		 .hass_uniq_id_suffix, .rounding_decimals, .changeSendThreshold		
-    {{"voltage",		"V",		"Voltage B",				"voltage_b",					"0",		},  1,			(float)0.25,		},	// OBK_VOLTAGE
-    {{"current",		"A",		"Current B",				"current_b",					"1",		},	3,			(float)0.002,		},	// OBK_CURRENT
-    {{"power",			"W",		"Power B",				"power_b",					"2",		},	2,			(float)0.25,		},	// OBK_POWER
-    {{"apparent_power",	"VA",		"Apparent Power B",		"power_apparent_b",			"9",		},	2,			(float)0.25,		},	// OBK_POWER_APPARENT
-    {{"reactive_power",	"var",		"Reactive Power B",		"power_reactive_b",			"10",		},	2,			(float)0.25,		},	// OBK_POWER_REACTIVE
-    {{"power_factor",	"",			"Power Factor B",			"power_factor_b",				"11",		},	2,			(float)0.05,		},	// OBK_POWER_FACTOR
-    {{"energy",			UNIT_WH,	"Energy Total B",			"energycounter_b",			"3",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_TOTAL
-    {{"energy",			UNIT_WH,	"Energy Last Hour B",		"energycounter_last_hour_b",	"4",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_LAST_HOUR
+    {{"voltage",		"V",		"Voltage B",				"voltage_b",					"0_b",		},  1,			(float)0.25,		},	// OBK_VOLTAGE
+    {{"current",		"A",		"Current B",				"current_b",					"1_b",		},	3,			(float)0.002,		},	// OBK_CURRENT
+    {{"power",			"W",		"Power B",				"power_b",					"2_b",		},	2,			(float)0.25,		},	// OBK_POWER
+    {{"apparent_power",	"VA",		"Apparent Power B",		"power_apparent_b",			"9_b",		},	2,			(float)0.25,		},	// OBK_POWER_APPARENT
+    {{"reactive_power",	"var",		"Reactive Power B",		"power_reactive_b",			"10_b",		},	2,			(float)0.25,		},	// OBK_POWER_REACTIVE
+    {{"power_factor",	"",			"Power Factor B",			"power_factor_b",				"11_b",		},	2,			(float)0.05,		},	// OBK_POWER_FACTOR
+    {{"energy",			UNIT_WH,	"Energy Total B",			"energycounter_b",			"3_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_TOTAL
+    {{"energy",			UNIT_WH,	"Energy Last Hour B",		"energycounter_last_hour_b",	"4_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_LAST_HOUR
     //{{"",				"",			"Consumption Stats",	"consumption_stats",		"5",		},	0,			0,			},	// OBK_CONSUMPTION_STATS
-    {{"energy",			UNIT_WH,	"Energy Today B",			"energycounter_today_b",		"7",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_TODAY
-    {{"energy",			UNIT_WH,	"Energy Yesterday B",		"energycounter_yesterday_b",	"6",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_YESTERDAY
-    {{"energy",			UNIT_WH,	"Energy 2 Days Ago B",	"energycounter_2_days_ago_b",	"12",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_2_DAYS_AGO
-    {{"energy",			UNIT_WH,	"Energy 3 Days Ago B",	"energycounter_3_days_ago_b",	"13",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_3_DAYS_AGO
-    {{"timestamp",		"",			"Energy Clear Date B",	"energycounter_clear_date_b",	"8",		},	0,			86400,		},	// OBK_CONSUMPTION_CLEAR_DATE	
+    {{"energy",			UNIT_WH,	"Energy Today B",			"energycounter_today_b",		"7_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_TODAY
+    {{"energy",			UNIT_WH,	"Energy Yesterday B",		"energycounter_yesterday_b",	"6_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_YESTERDAY
+    {{"energy",			UNIT_WH,	"Energy 2 Days Ago B",	"energycounter_2_days_ago_b",	"12_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_2_DAYS_AGO
+    {{"energy",			UNIT_WH,	"Energy 3 Days Ago B",	"energycounter_3_days_ago_b",	"13_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_3_DAYS_AGO
+    {{"timestamp",		"",			"Energy Clear Date B",	"energycounter_clear_date_b",	"8_b",		},	0,			86400,		},	// OBK_CONSUMPTION_CLEAR_DATE	
      } }
 };
 
@@ -945,9 +945,22 @@ float DRV_GetReading(energySensor_t type)
 	return (float)datasetlist[BL_SENSORS_IX_0].sensors[type].lastReading;
 }
 
+int BL_IsMeteringDeviceIndexActive(int asensdatasetix){
+  if (asensdatasetix < 0) return false;
+  if (asensdatasetix >= BL_SENSDATASETS_COUNT) return false;  
+  return sensors_reciveddata[asensdatasetix];
+}
+
 energySensorNames_t* DRV_GetEnergySensorNames(energySensor_t type)
 {
-	return &datasetlist[BL_SENSORS_IX_0].sensors[type].names;
+  return &datasetlist[BL_SENSORS_IX_0].sensors[type].names;
+}
+
+energySensorNames_t* DRV_GetEnergySensorNamesEx(int asensdatasetix, energySensor_t type)
+{
+  //return &datasetlist[BL_SENSORS_IX_0].sensors[type].names;
+  energysensdataset_t* sensdataset = BL_GetSensDataSetFromIx(asensdatasetix);
+  return &sensdataset->sensors[type].names;
 }
 
 #endif

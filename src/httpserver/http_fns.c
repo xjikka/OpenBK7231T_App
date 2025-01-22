@@ -7,6 +7,7 @@
 #include "../cmnds/cmd_public.h"
 #include "../driver/drv_tuyaMCU.h"
 #include "../driver/drv_public.h"
+#include "../driver/drv_bl_shared.h"
 #include "../hal/hal_wifi.h"
 #include "../hal/hal_pins.h"
 #include "../hal/hal_flashConfig.h"
@@ -1805,11 +1806,25 @@ void doHomeAssistantDiscovery(const char* topic, http_request_t* request) {
 	if (measuringPower == true) {
 		for (i = OBK__FIRST; i <= OBK__LAST; i++)
 		{
-			dev_info = hass_init_energy_sensor_device_info(i);
+			dev_info = hass_init_energy_sensor_device_info(i, 0 /*BL_SENSORS_IX_0*/);
 			if (dev_info) {
 				MQTT_QueuePublish(topic, dev_info->channel, hass_build_discovery_json(dev_info), OBK_PUBLISH_FLAG_RETAIN);
 				hass_free_device_info(dev_info);
 				discoveryQueued = true;
+			}
+		}
+		if (BL_IsMeteringDeviceIndexActive(BL_SENSORS_IX_1)) {
+			for (i = OBK__FIRST; i <= OBK__LAST; i++)
+			{
+				//BL_SENSORS_IX_1 does not have energy yet
+				if (i < OBK_VOLTAGE) continue;
+				if (i > OBK_POWER_FACTOR) continue;
+				dev_info = hass_init_energy_sensor_device_info(i, 1 /*BL_SENSORS_IX_1*/);
+				if (dev_info) {
+					MQTT_QueuePublish(topic, dev_info->channel, hass_build_discovery_json(dev_info), OBK_PUBLISH_FLAG_RETAIN);
+					hass_free_device_info(dev_info);
+					discoveryQueued = true;
+				}
 			}
 		}
 	}
