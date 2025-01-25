@@ -69,20 +69,20 @@ energysensdataset_t datasetlist[BL_SENSDATASETS_COUNT] = {
 ,
    { {
        //.hass_dev_class, 	.units,		.name_friendly,			.name_mqtt,		 .hass_uniq_id_suffix, .rounding_decimals, .changeSendThreshold		
-    {{"voltage",		"V",		"Voltage B",				"voltage_b",					"0_b",		},  1,			(float)0.25,		},	// OBK_VOLTAGE
-    {{"current",		"A",		"Current B",				"current_b",					"1_b",		},	3,			(float)0.002,		},	// OBK_CURRENT
-    {{"power",			"W",		"Power B",				"power_b",					"2_b",		},	2,			(float)0.25,		},	// OBK_POWER
-    {{"apparent_power",	"VA",		"Apparent Power B",		"power_apparent_b",			"9_b",		},	2,			(float)0.25,		},	// OBK_POWER_APPARENT
-    {{"reactive_power",	"var",		"Reactive Power B",		"power_reactive_b",			"10_b",		},	2,			(float)0.25,		},	// OBK_POWER_REACTIVE
-    {{"power_factor",	"",			"Power Factor B",			"power_factor_b",				"11_b",		},	2,			(float)0.05,		},	// OBK_POWER_FACTOR
-    {{"energy",			UNIT_WH,	"Energy Total B",			"energycounter_b",			"3_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_TOTAL
-    {{"energy",			UNIT_WH,	"Energy Last Hour B",		"energycounter_last_hour_b",	"4_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_LAST_HOUR
-    //{{"",				"",			"Consumption Stats",	"consumption_stats",		"5",		},	0,			0,			},	// OBK_CONSUMPTION_STATS
-    {{"energy",			UNIT_WH,	"Energy Today B",			"energycounter_today_b",		"7_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_TODAY
-    {{"energy",			UNIT_WH,	"Energy Yesterday B",		"energycounter_yesterday_b",	"6_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_YESTERDAY
-    {{"energy",			UNIT_WH,	"Energy 2 Days Ago B",	"energycounter_2_days_ago_b",	"12_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_2_DAYS_AGO
-    {{"energy",			UNIT_WH,	"Energy 3 Days Ago B",	"energycounter_3_days_ago_b",	"13_b",		},	3,			(float)0.1,		},	// OBK_CONSUMPTION_3_DAYS_AGO
-    {{"timestamp",		"",			"Energy Clear Date B",	"energycounter_clear_date_b",	"8_b",		},	0,			86400,		},	// OBK_CONSUMPTION_CLEAR_DATE	
+    {{"voltage",		"V",		"Voltage B",				"voltage_b",					"b_0",		},  1,			0.25,		},	// OBK_VOLTAGE
+    {{"current",		"A",		"Current B",				"current_b",					"b_1",		},	3,			0.002,		},	// OBK_CURRENT
+    {{"power",			"W",		"Power B",				"power_b",					"b_2",		},	2,			0.25,		},	// OBK_POWER
+    {{"apparent_power",	"VA",		"Apparent Power B",		"power_apparent_b",			"b_9",		},	2,			0.25,		},	// OBK_POWER_APPARENT
+    {{"reactive_power",	"var",		"Reactive Power B",		"power_reactive_b",			"b_10",		},	2,			0.25,		},	// OBK_POWER_REACTIVE
+    {{"power_factor",	"",			"Power Factor B",			"power_factor_b",				"b_11",		},	2,			0.05,		},	// OBK_POWER_FACTOR
+    {{"energy",			UNIT_WH,	"Energy Total B",			"energycounter_b",			"b_3",		},	3,			0.1,		},	// OBK_CONSUMPTION_TOTAL
+    {{"energy",			UNIT_WH,	"Energy Last Hour B",		"energycounter_last_hour_b",	"b_4",		},	3,			0.1,		},	// OBK_CONSUMPTION_LAST_HOUR
+    //{{"",				"",			"Consumption Stats B",	"consumption_stats_b",		"b_5",		},	0,			0,			},	// OBK_CONSUMPTION_STATS
+    {{"energy",			UNIT_WH,	"Energy Today B",			"energycounter_today_b",		"b_7",		},	3,			0.1,		},	// OBK_CONSUMPTION_TODAY
+    {{"energy",			UNIT_WH,	"Energy Yesterday B",		"energycounter_yesterday_b",	"b_6",		},	3,			0.1,		},	// OBK_CONSUMPTION_YESTERDAY
+    {{"energy",			UNIT_WH,	"Energy 2 Days Ago B",	"energycounter_2_days_ago_b",	"b_12",		},	3,			0.1,		},	// OBK_CONSUMPTION_2_DAYS_AGO
+    {{"energy",			UNIT_WH,	"Energy 3 Days Ago B",	"energycounter_3_days_ago_b",	"b_13",		},	3,			0.1,		},	// OBK_CONSUMPTION_3_DAYS_AGO
+    {{"timestamp",		"",			"Energy Clear Date B",	"energycounter_clear_date_b",	"b_8",		},	0,			86400,		},	// OBK_CONSUMPTION_CLEAR_DATE	
      } }
 };
 
@@ -956,6 +956,8 @@ energySensorNames_t* DRV_GetEnergySensorNames(energySensor_t type)
   return &datasetlist[BL_SENSORS_IX_0].sensors[type].names;
 }
 
+/// @param asensdatasetix dataset index when using two energy sensors
+/// @param type energySensor_t
 energySensorNames_t* DRV_GetEnergySensorNamesEx(int asensdatasetix, energySensor_t type)
 {
   //return &datasetlist[BL_SENSORS_IX_0].sensors[type].names;

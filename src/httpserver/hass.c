@@ -32,6 +32,7 @@ const char *g_template_lowMidHigh = "{% if value == '0' %}\n"
 /// @param type Entity type
 /// @param index Entity index (Ignored for RGB)
 /// @param uniq_id Array to populate (should be of size HASS_UNIQUE_ID_SIZE)
+/// @param asensdatasetix dataset index for ENERGY_METER_SENSOR, otherwise 0
 void hass_populate_unique_id(ENTITY_TYPE type, int index, char* uniq_id, int asensdatasetix) {
 	//https://developers.home-assistant.io/docs/entity_registry_index/#unique-id-requirements
 	//mentions that mac can be used for unique_id and deviceName contains that.
@@ -133,9 +134,10 @@ void hass_populate_unique_id(ENTITY_TYPE type, int index, char* uniq_id, int ase
 /// @param fmt
 /// @param type Entity type
 /// @param index Entity index
-void hass_print_unique_id(http_request_t* request, const char* fmt, ENTITY_TYPE type, int index) {
+/// @param asensdatasetix dataset index for ENERGY_METER_SENSOR, otherwise 0
+void hass_print_unique_id(http_request_t* request, const char* fmt, ENTITY_TYPE type, int index, int asensdatasetix) {
 	char uniq_id[HASS_UNIQUE_ID_SIZE];
-	hass_populate_unique_id(type, index, uniq_id, 0 /*BL_SENSORS_IX_0*/);
+	hass_populate_unique_id(type, index, uniq_id, asensdatasetix);
 	hprintf255(request, fmt, uniq_id);
 }
 
@@ -207,6 +209,7 @@ cJSON* hass_build_device_node(cJSON* ids) {
 /// For energy sensors, index corresponds to energySensor_t. For regular sensor, index can be be the channel.
 /// @param payload_on The payload that represents enabled state. This is not added for POWER_SENSOR.
 /// @param payload_off The payload that represents disabled state. This is not added for POWER_SENSOR.
+/// @param asensdatasetix dataset index for ENERGY_METER_SENSOR, otherwise 0
 /// @return 
 HassDeviceInfo* hass_init_device_info(ENTITY_TYPE type, int index, const char* payload_on, const char* payload_off, int asensdatasetix) {
 	HassDeviceInfo* info = os_malloc(sizeof(HassDeviceInfo));
@@ -355,10 +358,10 @@ HassDeviceInfo* hass_init_device_info(ENTITY_TYPE type, int index, const char* p
 HassDeviceInfo* hass_init_relay_device_info(int index, ENTITY_TYPE type, bool bToggleInv) {
 	HassDeviceInfo* info;
 	if (bToggleInv) {
-		info = hass_init_device_info(type, index, "0", "1", 0 /*BL_SENSORS_IX_0*/);
+		info = hass_init_device_info(type, index, "0", "1", 0);
 	}
 	else {
-		info = hass_init_device_info(type, index, "1", "0", 0 /*BL_SENSORS_IX_0*/);
+		info = hass_init_device_info(type, index, "1", "0", 0);
 	}
 
 	sprintf(g_hassBuffer, "~/%i/get", index);
@@ -380,7 +383,7 @@ HassDeviceInfo* hass_init_light_device_info(ENTITY_TYPE type) {
 
 	//We can just use 1 to generate unique_id and name for single PWM.
 	//The payload_on/payload_off have to match the state_topic/command_topic values.
-	info = hass_init_device_info(type, 1, "1", "0", 0 /*BL_SENSORS_IX_0*/);
+	info = hass_init_device_info(type, 1, "1", "0", 0);
 
 	switch (type) {
 	case LIGHT_RGBCW:
@@ -451,7 +454,7 @@ HassDeviceInfo* hass_init_binary_sensor_device_info(int index, bool bInverse) {
 		payload_off = "1";
 		payload_on = "0";
 	}
-	HassDeviceInfo* info = hass_init_device_info(BINARY_SENSOR, index, payload_on, payload_off, 0 /*BL_SENSORS_IX_0*/);
+	HassDeviceInfo* info = hass_init_device_info(BINARY_SENSOR, index, payload_on, payload_off, 0);
 
 	sprintf(g_hassBuffer, "~/%i/get", index);
 	cJSON_AddStringToObject(info->root, "stat_t", g_hassBuffer);   //state_topic
@@ -537,7 +540,7 @@ HassDeviceInfo* hass_init_light_singleColor_onChannels(int toggle, int dimmer, i
 	const char* clientId;
 	
 	clientId = CFG_GetMQTTClientId();
-	dev_info = hass_init_device_info(LIGHT_PWM, toggle, "1", "0", 0 /*BL_SENSORS_IX_0*/);
+	dev_info = hass_init_device_info(LIGHT_PWM, toggle, "1", "0", 0);
 
 	sprintf(g_hassBuffer, "~/%i/get", toggle);
 	cJSON_AddStringToObject(dev_info->root, "stat_t", g_hassBuffer);  //state_topic
@@ -559,7 +562,7 @@ HassDeviceInfo* hass_init_light_singleColor_onChannels(int toggle, int dimmer, i
 /// @return 
 HassDeviceInfo* hass_init_sensor_device_info(ENTITY_TYPE type, int channel, int decPlaces, int decOffset, int divider) {
 	//Assuming that there is only one DHT setup per device which keeps uniqueid/names simpler
-	HassDeviceInfo* info = hass_init_device_info(type, channel, NULL, NULL, 0 /*BL_SENSORS_IX_0*/);	//using channel as index to generate uniqueId
+	HassDeviceInfo* info = hass_init_device_info(type, channel, NULL, NULL, 0);	//using channel as index to generate uniqueId
 
 	//https://developers.home-assistant.io/docs/core/entity/sensor/#available-device-classes
 	switch (type) {
