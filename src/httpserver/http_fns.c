@@ -371,6 +371,7 @@ int http_fn_index(http_request_t* request) {
 		}
 		poststr(request, "</table>");
 	}
+	poststr(request, "bubak<br/>"); // replaceable content follows
 	poststr(request, "<table>");	//Table default to 100% width in stylesheet
 	for (i = 0; i < CHANNEL_MAX; i++) {
 
