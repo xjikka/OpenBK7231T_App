@@ -174,7 +174,10 @@ void BL09XX_AppendInformationToHTTPIndexPage(http_request_t * request)
 	for (int i = OBK__FIRST; i <= OBK_CONSUMPTION__DAILY_LAST; i++) {
 #if ENABLE_BL_TWIN
     //currently, only the BL_SENSORS_IX_0 have Energy Data (need channels to store data in flash)
-    if (!(asensdatasetix == BL_SENSORS_IX_0) && (i >= OBK_CONSUMPTION_TOTAL)) {
+    if ((asensdatasetix == BL_SENSORS_IX_0) && (i > OBK_CONSUMPTION_YESTERDAY)) {
+      continue;
+    }
+    if ((asensdatasetix == BL_SENSORS_IX_1) && (i > OBK_CONSUMPTION_TODAY)) {
       continue;
     }
 #endif
@@ -352,24 +355,25 @@ commandResult_t BL09XX_ResetEnergyCounterEx(int asensdatasetix, const void *cont
 #if ENABLE_BL_TWIN
 commandResult_t BL09XX_ResetEnergyCounter(const void* context, const char* cmd, const char* args, int cmdFlags)
 {
+  Tokenizer_TokenizeString(args, 0);
   int acnt = Tokenizer_GetArgsCount();
   int fsix=0;
   switch (acnt) {
-  case 0: //all
-    BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_0, context, cmd, args, cmdFlags);
-    BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_1, context, cmd, args, cmdFlags);
-    return CMD_RES_OK;
-    break;
-  case 1: //old type
-    return BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_0, context, cmd, args, cmdFlags);
-    break;
-  case 2: 
-    fsix = Tokenizer_GetArgInteger(2);
-    return BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_0, context, cmd, args, cmdFlags);
-    break;
-  default:
-    return CMD_RES_ERROR;
-    break;
+    case 0: //all
+      BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_0, context, cmd, args, cmdFlags);
+      BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_1, context, cmd, args, cmdFlags);
+      return CMD_RES_OK;
+      break;
+    case 1: //old type
+      return BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_0, context, cmd, args, cmdFlags);
+      break;
+    case 2: 
+      fsix = Tokenizer_GetArgInteger(2);
+      return BL09XX_ResetEnergyCounterEx(fsix, context, cmd, args, cmdFlags);
+      break;
+    default:
+      return CMD_RES_ERROR;
+      break;
   }
 }
 #endif
@@ -835,7 +839,15 @@ void BL_ProcessUpdate(float voltage, float current, float power,
   }
   for (i = OBK__FIRST; i <= OBK__LAST; i++)
   {
-    // send update only if there was a big change or if certain time has passed
+#ifdef ENABLE_BL_TWIN
+    if ((asensdatasetix == BL_SENSORS_IX_1) && (i >= OBK_CONSUMPTION_2_DAYS_AGO) && (i <= OBK_CONSUMPTION_3_DAYS_AGO)) {
+      continue;
+    };
+    if ((asensdatasetix == BL_SENSORS_IX_1) && (i >= OBK_CONSUMPTION_YESTERDAY) && (i <= OBK_CONSUMPTION_3_DAYS_AGO)) {
+      continue;
+    };
+#endif
+      // send update only if there was a big change or if certain time has passed
     // Do not send message with every measurement. 
     diff = (float)sensdataset->sensors[i].lastSentValue - (float)sensdataset->sensors[i].lastReading;
     // check for change
@@ -872,9 +884,6 @@ void BL_ProcessUpdate(float voltage, float current, float power,
       {
         sensdataset->sensors[i].lastSentValue = sensdataset->sensors[i].lastReading;
         if (i == OBK_CONSUMPTION_CLEAR_DATE) {
-#if ENABLE_BL_TWIN
-          if (asensdatasetix == BL_SENSORS_IX_0)
-#endif
           {
             sensdataset->sensors[i].lastReading = ConsumptionResetTime; //Only to make the 'nochangeframe' mechanism work here
             ltm = gmtime(&ConsumptionResetTime);
