@@ -178,6 +178,8 @@ void BL09XX_AppendInformationToHTTPIndexPage(http_request_t * request)
 
 	for (int i = OBK__FIRST; i <= OBK_CONSUMPTION__DAILY_LAST; i++) {
 #if ENABLE_BL_TWIN
+    //in twin mode, for ix1 is possible to skip OBK_VOLTAGE, dont skip for now
+    //if ((asensdatasetix > BL_SENSORS_IX_0) && (i == OBK_VOLTAGE)) continue;
     //in twin mode, for ix0 is last OBK_CONSUMPTION_YESTERDAY, for ix1 ,OBK_CONSUMPTION_TODAY
     if (i > OBK_CONSUMPTION_STORED_LAST[asensdatasetix]) continue;
 #endif
@@ -835,6 +837,8 @@ void BL_ProcessUpdate(float voltage, float current, float power,
   for (i = OBK__FIRST; i <= OBK__LAST; i++)
   {
 #ifdef ENABLE_BL_TWIN
+    //in twin mode, for ix1 is possible to skip OBK_VOLTAGE, dont skip for now
+    //if ((asensdatasetix > 0) && (i== OBK_VOLTAGE)) continue;
     //in twin mode, for ix0 is last OBK_CONSUMPTION_YESTERDAY, for ix1 ,OBK_CONSUMPTION_TODAY
     if ((i > OBK_CONSUMPTION_STORED_LAST[asensdatasetix]) && (i <= OBK_CONSUMPTION__DAILY_LAST)) continue;
 #endif
