@@ -28,10 +28,12 @@
 int stat_updatesSkipped[BL_SENSDATASETS_COUNT] = { 0 ,0 };
 int stat_updatesSent[BL_SENSDATASETS_COUNT] = { 0,0 };
 bool sensors_reciveddata[BL_SENSDATASETS_COUNT] = { 0,0 };  //1 if data received
+float lastSavedEnergyCounterValue[BL_SENSDATASETS_COUNT] = { 0.0f, 0.0f };
 #else
-int stat_updatesSkipped =  0;
-int stat_updatesSent =  0;
-bool sensors_reciveddata = 0;  //1 if data received
+float lastSavedEnergyCounterValue[BL_SENSDATASETS_COUNT] = { 0.0f };
+int stat_updatesSkipped[BL_SENSDATASETS_COUNT] = { 0 };
+int stat_updatesSent[BL_SENSDATASETS_COUNT] = { 0 };
+bool sensors_reciveddata[BL_SENSDATASETS_COUNT] = { 0 };  //1 if data received
 #endif
 
 // Order corrsponds to enums OBK_VOLTAGE - OBK__LAST
@@ -106,8 +108,7 @@ energysensdataset_t* BL_GetSensDataSetFromIx(int asensdatasetix) {
 float lastReadingFrequency = NAN;
 
 //static double energyCounter = 0.0;
-portTickType energyCounterStamp;
-
+portTickType energyCounterStamp[BL_SENSDATASETS_COUNT];
 bool energyCounterStatsEnable = false;
 int energyCounterSampleCount = 60;
 int energyCounterSampleInterval = 60;
@@ -117,7 +118,6 @@ long energyCounterMinutesIndex;
 bool energyCounterStatsJSONEnable = false;
 
 int actual_mday = -1;
-float lastSavedEnergyCounterValue = 0.0f;
 float changeSavedThresholdEnergy = 10.0f;
 long ConsumptionSaveCounter = 0;
 portTickType lastConsumptionSaveStamp;
@@ -127,11 +127,7 @@ int changeSendAlwaysFrames = 60;
 int changeDoNotSendMinFrames = 5;
 
 void BL_ResetRecivedDataBool() {
-#if ENABLE_BL_TWIN
   for (int i = 0; i < BL_SENSDATASETS_COUNT; i++) sensors_reciveddata[i] = 0;
-#else
-  sensors_reciveddata = 0;
-#endif
 }
 
 #if ENABLE_BL_TWIN
@@ -142,7 +138,8 @@ void BL09XX_AppendInformationToHTTPIndexPageEx(int asensdatasetix, http_request_
 #else
 void BL09XX_AppendInformationToHTTPIndexPage(http_request_t * request)
 {
-  energysensdataset_t* sensdataset = &datasetlist[BL_SENSORS_IX_0];
+  int asensdatasetix = BL_SENSORS_IX_0;
+  energysensdataset_t* sensdataset = &datasetlist[asensdatasetix];
 #endif
     
     int i;
@@ -165,9 +162,7 @@ void BL09XX_AppendInformationToHTTPIndexPage(http_request_t * request)
 
     poststr(request, "<hr><table style='width:100%'>");
 
-#if ENABLE_BL_TWIN
     if (asensdatasetix == BL_SENSORS_IX_0) 
-#endif
     {
       if (!isnan(lastReadingFrequency)) {
         poststr(request,
@@ -198,19 +193,11 @@ void BL09XX_AppendInformationToHTTPIndexPage(http_request_t * request)
 
     poststr(request, "</table>");
 
-#if ENABLE_BL_TWIN
     hprintf255(request, "(changes sent %i, skipped %i, saved %li) - %s<hr>",
         stat_updatesSent[asensdatasetix], stat_updatesSkipped[asensdatasetix], ConsumptionSaveCounter,
       mode);
-#else
-    hprintf255(request, "(changes sent %i, skipped %i, saved %li) - %s<hr>",
-      stat_updatesSent, stat_updatesSkipped, ConsumptionSaveCounter,
-      mode);
-#endif
 
-#if ENABLE_BL_TWIN
     if (asensdatasetix == BL_SENSORS_IX_0)
-#endif
     {
       poststr(request, "<h5>Energy Clear Date: ");
       if (ConsumptionResetTime) {
@@ -293,8 +280,8 @@ void BL09XX_SaveEmeteringStatistics()
     data.YesterdayConsumption = (float)sensdataset->sensors[OBK_CONSUMPTION_YESTERDAY].lastReading;
     data.actual_mday = actual_mday;
 #if ENABLE_BL_TWIN
-    data.ConsumptionHistory[0] = (float)sensdataset1->sensors[OBK_CONSUMPTION_TOTAL].lastReading;
-    data.ConsumptionHistory[1] = (float)sensdataset1->sensors[OBK_CONSUMPTION_TODAY].lastReading;
+    data.TotalConsumption_b = (float)sensdataset1->sensors[OBK_CONSUMPTION_TOTAL].lastReading;
+    data.TodayConsumpion_b = (float)sensdataset1->sensors[OBK_CONSUMPTION_TODAY].lastReading;
 #else
     data.ConsumptionHistory[0] = (float)sensdataset->sensors[OBK_CONSUMPTION_2_DAYS_AGO].lastReading;
     data.ConsumptionHistory[1] = (float)sensdataset->sensors[OBK_CONSUMPTION_3_DAYS_AGO].lastReading;
@@ -314,7 +301,8 @@ commandResult_t BL09XX_ResetEnergyCounterEx(int asensdatasetix, const void *cont
 #else
   commandResult_t BL09XX_ResetEnergyCounter(const void* context, const char* cmd, const char* args, int cmdFlags)
   {
-    energysensdataset_t* sensdataset = &datasetlist[BL_SENSORS_IX_0];
+    int asensdatasetix = BL_SENSORS_IX_0;
+    energysensdataset_t* sensdataset = &datasetlist[asensdatasetix];
 #endif
 
   float value;
@@ -322,9 +310,9 @@ commandResult_t BL09XX_ResetEnergyCounterEx(int asensdatasetix, const void *cont
 
     if(args==0||*args==0) 
     {
-      lastSavedEnergyCounterValue = 0.0; //20250203 reset lastSavedEnergyCounterValue, otherwise the values will not be saved until restart BL
+      lastSavedEnergyCounterValue[asensdatasetix] = 0.0; //20250203 reset lastSavedEnergyCounterValue, otherwise the values will not be saved until restart BL
       sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading = 0.0;
-        energyCounterStamp = xTaskGetTickCount();
+      energyCounterStamp[asensdatasetix] = xTaskGetTickCount();
         if (energyCounterStatsEnable == true)
         {
             if (energyCounterMinutes != NULL)
@@ -344,7 +332,7 @@ commandResult_t BL09XX_ResetEnergyCounterEx(int asensdatasetix, const void *cont
     } else {
         value = (float)atof(args);
         sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading = value;
-        energyCounterStamp = xTaskGetTickCount();
+        energyCounterStamp[asensdatasetix] = xTaskGetTickCount();
     }
     ConsumptionResetTime = (time_t)NTP_GetCurrentTime();
 #if WINDOWS
@@ -640,7 +628,8 @@ void BL_ProcessUpdateEx(int asensdatasetix, float voltage, float current, float 
 #else
 void BL_ProcessUpdate(float voltage, float current, float power,
   float frequency, float energyWh) {
-  energysensdataset_t* sensdataset = &datasetlist[BL_SENSORS_IX_0];
+  int asensdatasetix = BL_SENSORS_IX_0;
+  energysensdataset_t* sensdataset = &datasetlist[asensdatasetix];
 #endif
 
   int i;
@@ -691,21 +680,11 @@ void BL_ProcessUpdate(float voltage, float current, float power,
 
   lastReadingFrequency = frequency;
 
-#if ENABLE_BL_TWIN
   sensors_reciveddata[asensdatasetix] = 1;
-#else
-  sensors_reciveddata = 1;
-#endif
-
-  //currently, only the BL_SENSORS_IX_0 have Energy Data (need channels to store data in flash)
-#if ENABLE_BL_TWIN
-  if (asensdatasetix == BL_SENSORS_IX_0) 
-#endif
   {
-    //energy only on BL_SENSORS_IX_0
     float energy = 0;
     if (isnan(energyWh)) {
-      xPassedTicks = (int)(xTaskGetTickCount() - energyCounterStamp);
+      xPassedTicks = (int)(xTaskGetTickCount() - energyCounterStamp[asensdatasetix]);
       // FIXME: Wrong calculation if tick count overflows
       if (xPassedTicks <= 0)
         xPassedTicks = 1;
@@ -717,7 +696,7 @@ void BL_ProcessUpdate(float voltage, float current, float power,
       energy = 0.0;
 
     sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading += (double)energy;
-    energyCounterStamp = xTaskGetTickCount();
+    energyCounterStamp[asensdatasetix] = xTaskGetTickCount();
     HAL_FlashVars_SaveTotalConsumption((float)sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading);
     sensdataset->sensors[OBK_CONSUMPTION_TODAY].lastReading += energy;
 
@@ -827,11 +806,7 @@ void BL_ProcessUpdate(float voltage, float current, float power,
           // addLogAdv(LOG_INFO, LOG_FEATURE_ENERGYMETER, "JSON Printed: %d bytes", strlen(msg));
 
           MQTT_PublishMain_StringString("consumption_stats", msg, 0);
-#if ENABLE_BL_TWIN
           stat_updatesSent[asensdatasetix]++;
-#else
-          stat_updatesSent++;
-#endif
           os_free(msg);
         }
 #endif
@@ -921,26 +896,18 @@ void BL_ProcessUpdate(float voltage, float current, float power,
           if (sensdataset->sensors[i].names.units == UNIT_WH) val = BL_ChangeEnergyUnitIfNeeded(val);
           MQTT_PublishMain_StringFloat(sensdataset->sensors[i].names.name_mqtt, val, sensdataset->sensors[i].rounding_decimals, OBK_PUBLISH_FLAG_QOS_ZERO);
         }
-#if ENABLE_BL_TWIN
         stat_updatesSent[asensdatasetix]++;
-#else
-        stat_updatesSent++;
-#endif
       }
 #endif
     } else {
       // no change frame
       sensdataset->sensors[i].noChangeFrame++;
-#if ENABLE_BL_TWIN
       stat_updatesSkipped[asensdatasetix]++;
-#else
-      stat_updatesSkipped++;
-#endif
     }
   }
 
   {
-    if (((sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading - lastSavedEnergyCounterValue) >= changeSavedThresholdEnergy) ||
+      if (((sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading - lastSavedEnergyCounterValue[asensdatasetix]) >= changeSavedThresholdEnergy) ||
       ((xTaskGetTickCount() - lastConsumptionSaveStamp) >= (6 * 3600 * 1000 / portTICK_PERIOD_MS)))
     {
 #if WINDOWS
@@ -951,7 +918,7 @@ void BL_ProcessUpdate(float voltage, float current, float power,
       if (ota_progress() == -1)
 #endif
       {
-        lastSavedEnergyCounterValue = (float)sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading;
+        lastSavedEnergyCounterValue[asensdatasetix] = (float)sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading;
         BL09XX_SaveEmeteringStatistics();
         lastConsumptionSaveStamp = xTaskGetTickCount();
       }
@@ -981,7 +948,6 @@ void BL_Shared_Init(void) {
       sensdataset->sensors[i].lastReading = 0;
     }
     {
-      energyCounterStamp = xTaskGetTickCount();
 
       if (energyCounterStatsEnable == true)
       {
@@ -1007,13 +973,18 @@ void BL_Shared_Init(void) {
       sensdataset->sensors[OBK_CONSUMPTION_TODAY].lastReading = data.TodayConsumpion;
       sensdataset->sensors[OBK_CONSUMPTION_YESTERDAY].lastReading = data.YesterdayConsumption;
       actual_mday = data.actual_mday;
-      lastSavedEnergyCounterValue = data.TotalConsumption;
 #if ENABLE_BL_TWIN
-      sensdataset1->sensors[OBK_CONSUMPTION_TOTAL].lastReading = data.ConsumptionHistory[0];
-      sensdataset1->sensors[OBK_CONSUMPTION_TODAY].lastReading = data.ConsumptionHistory[1];
+      sensdataset1->sensors[OBK_CONSUMPTION_TOTAL].lastReading = data.TotalConsumption_b;
+      sensdataset1->sensors[OBK_CONSUMPTION_TODAY].lastReading = data.TodayConsumpion_b;
+      lastSavedEnergyCounterValue[BL_SENSORS_IX_0] = data.TotalConsumption;
+      lastSavedEnergyCounterValue[BL_SENSORS_IX_1] = data.TotalConsumption_b;
+      energyCounterStamp[BL_SENSORS_IX_0] = xTaskGetTickCount();
+      energyCounterStamp[BL_SENSORS_IX_1] = xTaskGetTickCount();
 #else
+      lastSavedEnergyCounterValue[BL_SENSORS_IX_0] = data.TotalConsumption;
       sensdataset->sensors[OBK_CONSUMPTION_2_DAYS_AGO].lastReading = data.ConsumptionHistory[0];
       sensdataset->sensors[OBK_CONSUMPTION_3_DAYS_AGO].lastReading = data.ConsumptionHistory[1];
+      energyCounterStamp[BL_SENSORS_IX_0] = xTaskGetTickCount();
 #endif
       ConsumptionResetTime = data.ConsumptionResetTime;
       ConsumptionSaveCounter = data.save_counter;
