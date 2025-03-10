@@ -23,6 +23,11 @@
 #else
 #define BL_SENSDATASETS_COUNT 1
 #endif
+#if ENABLE_BL_TWIN
+const int OBK_CONSUMPTION_STORED_LAST[2] = { OBK_CONSUMPTION_YESTERDAY,OBK_CONSUMPTION_TODAY };
+#else
+const int OBK_CONSUMPTION_STORED_LAST[1] = { OBK_CONSUMPTION__DAILY_LAST };
+#endif
 
 #if ENABLE_BL_TWIN
 int stat_updatesSkipped[BL_SENSDATASETS_COUNT] = { 0 ,0 };
@@ -173,13 +178,8 @@ void BL09XX_AppendInformationToHTTPIndexPage(http_request_t * request)
 
 	for (int i = OBK__FIRST; i <= OBK_CONSUMPTION__DAILY_LAST; i++) {
 #if ENABLE_BL_TWIN
-    //currently, only the BL_SENSORS_IX_0 have Energy Data (need channels to store data in flash)
-    if ((asensdatasetix == BL_SENSORS_IX_0) && (i > OBK_CONSUMPTION_YESTERDAY)) {
-      continue;
-    }
-    if ((asensdatasetix == BL_SENSORS_IX_1) && (i > OBK_CONSUMPTION_TODAY)) {
-      continue;
-    }
+    //in twin mode, for ix0 is last OBK_CONSUMPTION_YESTERDAY, for ix1 ,OBK_CONSUMPTION_TODAY
+    if (i > OBK_CONSUMPTION_STORED_LAST[asensdatasetix]) continue;
 #endif
     if ((energyCounterMinutes == NULL) && (i == OBK_CONSUMPTION_LAST_HOUR)) {
       continue;
@@ -740,7 +740,7 @@ void BL_ProcessUpdate(float voltage, float current, float power,
       }
     }
 
-    if (energyCounterStatsEnable == true)
+    if ((energyCounterStatsEnable == true) && (asensdatasetix= BL_SENSORS_IX_0))
     {
       interval = energyCounterSampleInterval;
       interval *= (1000 / portTICK_PERIOD_MS);
@@ -840,12 +840,8 @@ void BL_ProcessUpdate(float voltage, float current, float power,
   for (i = OBK__FIRST; i <= OBK__LAST; i++)
   {
 #ifdef ENABLE_BL_TWIN
-    if ((asensdatasetix == BL_SENSORS_IX_1) && (i >= OBK_CONSUMPTION_2_DAYS_AGO) && (i <= OBK_CONSUMPTION_3_DAYS_AGO)) {
-      continue;
-    };
-    if ((asensdatasetix == BL_SENSORS_IX_1) && (i >= OBK_CONSUMPTION_YESTERDAY) && (i <= OBK_CONSUMPTION_3_DAYS_AGO)) {
-      continue;
-    };
+    //in twin mode, for ix0 is last OBK_CONSUMPTION_YESTERDAY, for ix1 ,OBK_CONSUMPTION_TODAY
+    if ((i > OBK_CONSUMPTION_STORED_LAST[asensdatasetix]) && (i <= OBK_CONSUMPTION__DAILY_LAST)) continue;
 #endif
       // send update only if there was a big change or if certain time has passed
     // Do not send message with every measurement. 

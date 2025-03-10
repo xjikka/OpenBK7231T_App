@@ -25,18 +25,20 @@ typedef enum energySensor_e {
 	OBK_CONSUMPTION_YESTERDAY,
 	OBK_CONSUMPTION_2_DAYS_AGO,
 	OBK_CONSUMPTION_3_DAYS_AGO,
-#if ENABLE_BL_TWIN
-	OBK_CONSUMPTION__DAILY_LAST = OBK_CONSUMPTION_YESTERDAY,
-#else
 	OBK_CONSUMPTION__DAILY_LAST = OBK_CONSUMPTION_3_DAYS_AGO,
-#endif
 
 	OBK_CONSUMPTION_CLEAR_DATE,
 	OBK__LAST = OBK_CONSUMPTION_CLEAR_DATE,
 	OBK__NUM_SENSORS,
 } energySensor_t;
 
-typedef struct energySensorNames_s {	
+#if ENABLE_BL_TWIN
+extern const int OBK_CONSUMPTION_STORED_LAST[2];
+#else
+extern const int OBK_CONSUMPTION_STORED_LAST[1];
+#endif
+
+typedef struct energySensorNames_s {
 	const char* const hass_dev_class;
 	const char* const units;
 	const char* const name_friendly;
