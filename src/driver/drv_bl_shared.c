@@ -297,7 +297,7 @@ void BL09XX_SaveEmeteringStatistics()
 }
 
 #if ENABLE_BL_TWIN
-commandResult_t BL09XX_ResetEnergyCounterEx(int asensdatasetix, const void *context, const char *cmd, const char *args, int cmdFlags)
+commandResult_t BL09XX_ResetEnergyCounterEx(int asensdatasetix, const void *context, const char *cmd, float avalue)
 {
   if ((asensdatasetix < 0) || (asensdatasetix > BL_SENSDATASETS_COUNT - 1)) return CMD_RES_ERROR;  //to avoid bad index on data[BL_SENSDATASETS_COUNT]
   energysensdataset_t* sensdataset = BL_GetSensDataSetFromIx(asensdatasetix);
@@ -308,11 +308,12 @@ commandResult_t BL09XX_ResetEnergyCounterEx(int asensdatasetix, const void *cont
     energysensdataset_t* sensdataset = &datasetlist[asensdatasetix];
 #endif
 
-  float value;
+  //float value;
     int i;
 
-    if(args==0||*args==0) 
+    if(avalue<0)
     {
+      addLogAdv(LOG_INFO, LOG_FEATURE_ENERGYMETER, "ResetEnergyCounter %i all", asensdatasetix);
       lastSavedEnergyCounterValue[asensdatasetix] = 0.0; //20250203 reset lastSavedEnergyCounterValue, otherwise the values will not be saved until restart BL
       sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading = 0.0;
       energyCounterStamp[asensdatasetix] = xTaskGetTickCount();
@@ -333,9 +334,10 @@ commandResult_t BL09XX_ResetEnergyCounterEx(int asensdatasetix, const void *cont
           sensdataset->sensors[i].lastReading = 0.0;
         }
     } else {
-        value = (float)atof(args);
-        sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading = value;
-        energyCounterStamp[asensdatasetix] = xTaskGetTickCount();
+      addLogAdv(LOG_INFO, LOG_FEATURE_ENERGYMETER, "ResetEnergyCounter %i total=%f", asensdatasetix,avalue);
+      //value = (float)atof(args);
+      sensdataset->sensors[OBK_CONSUMPTION_TOTAL].lastReading = avalue;
+      energyCounterStamp[asensdatasetix] = xTaskGetTickCount();
     }
     ConsumptionResetTime = (time_t)NTP_GetCurrentTime();
 #if WINDOWS
@@ -358,22 +360,15 @@ commandResult_t BL09XX_ResetEnergyCounter(const void* context, const char* cmd, 
   Tokenizer_TokenizeString(args, 0);
   int acnt = Tokenizer_GetArgsCount();
   int fsix=0;
-  switch (acnt) {
-    case 0: //all
-      BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_0, context, cmd, args, cmdFlags);
-      BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_1, context, cmd, args, cmdFlags);
-      return CMD_RES_OK;
-      break;
-    case 1: //old type
-      return BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_0, context, cmd, args, cmdFlags);
-      break;
-    case 2: 
-      fsix = Tokenizer_GetArgInteger(2);
-      return BL09XX_ResetEnergyCounterEx(fsix, context, cmd, args, cmdFlags);
-      break;
-    default:
-      return CMD_RES_ERROR;
-      break;
+  if (acnt == 0) {
+    BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_0, context, cmd, -1);
+    BL09XX_ResetEnergyCounterEx(BL_SENSORS_IX_1, context, cmd, -1);
+    return CMD_RES_OK;
+  } else {
+    float fvalue = Tokenizer_GetArgFloat(0);
+    fsix = BL_SENSORS_IX_0;
+    if (acnt>=2) fsix = Tokenizer_GetArgInteger(1);
+    return BL09XX_ResetEnergyCounterEx(fsix, context, cmd, fvalue);
   }
 }
 #endif
@@ -998,8 +993,8 @@ void BL_Shared_Init(void) {
       //int HAL_SetEnergyMeterStatus(ENERGY_METERING_DATA *data);
     }
 
-	//cmddetail:{"name":"EnergyCntReset","args":"[OptionalNewValue]",
-	//cmddetail:"descr":"Resets the total Energy Counter, the one that is usually kept after device reboots. After this commands, the counter will start again from 0 (or from the value you specified).",
+	//cmddetail:{"name":"EnergyCntReset","args":"[OptionalNewValue][sensorix]",
+	//cmddetail:"descr":"Resets the total Energy Counter, the one that is usually kept after device reboots. After this commands, the counter will start again from 0 (or from the value you specified). sensorix is used in ENABLE_BL_TWIN",
 	//cmddetail:"fn":"BL09XX_ResetEnergyCounter","file":"driver/drv_bl_shared.c","requires":"",
 	//cmddetail:"examples":""}
     CMD_RegisterCommand("EnergyCntReset", BL09XX_ResetEnergyCounter, NULL);

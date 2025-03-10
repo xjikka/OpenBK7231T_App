@@ -475,6 +475,8 @@ HassDeviceInfo* hass_init_energy_sensor_device_info(int index, int asensdataseti
 	if (index > OBK__LAST) return info;
 	if (index >= OBK_CONSUMPTION__DAILY_FIRST && !DRV_IsRunning("NTP")) return info; //include daily stats only when time is valid
 #ifdef ENABLE_BL_TWIN
+	//in twin mode, for ix1 skip OBK_VOLTAGE 
+	if ((asensdatasetix>0) && (index==OBK_VOLTAGE)) return info;
 	//in twin mode, for ix0 is last OBK_CONSUMPTION_YESTERDAY, for ix1 ,OBK_CONSUMPTION_TODAY
 	if ((index > OBK_CONSUMPTION_STORED_LAST[asensdatasetix]) && (index <= OBK_CONSUMPTION__DAILY_LAST)) return info;
 #endif
