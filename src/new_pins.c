@@ -2553,8 +2553,8 @@ void PIN_AddCommands(void)
 	CMD_RegisterCommand("setButtonHoldRepeat", CMD_setButtonHoldRepeat, NULL);
 #ifdef ENABLE_BL_MOVINGAVG
 	//cmddetail:{"name":"setMovingAvg","args":"MovingAvg",
-	//cmddetail:"descr":"Moving average value for power and current. <=1 disable, >=2 count of avg values. The calibration is temporary and need to be set at starup.",
-	//cmddetail:"fn":"NULL);","file":"driver/drv_pwrCal.c","requires":"",
+	//cmddetail:"descr":"Moving average value for power and current. <=1 disable, >=2 count of avg values. The value is temporary and need to be set at starup.",
+	//cmddetail:"fn":"CMD_setMovingAvg","file":"new_pins.c","requires":"",
 	//cmddetail:"examples":""}
 	CMD_RegisterCommand("setMovingAvg", CMD_setMovingAvg, NULL);
 #endif
