@@ -28,6 +28,11 @@
 #define NO_CHIP_TEMPERATURE			1
 #define OBK_DISABLE_ALL_DRIVERS		1
 
+#elif PLATFORM_XR872
+
+#define NO_CHIP_TEMPERATURE			1
+#define OBK_DISABLE_ALL_DRIVERS		1
+
 #elif PLATFORM_W600
 
 // parse things like $CH1 or $hour etc
@@ -167,7 +172,6 @@
 
 
 #elif PLATFORM_BEKEN
-
 
 #define	ENABLE_HA_DISCOVERY		1
 #define ENABLE_SEND_POSTANDGET		1
