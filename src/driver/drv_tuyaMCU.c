@@ -217,6 +217,7 @@ static int wifi_state_timer = 0;
 static bool self_processing_mode = true;
 static bool state_updated = false;
 static int g_sendQueryStatePackets = 0;
+static int g_tuyaMCUBatteryAckDelay = 0;
 
 // wifistate to send when not online
 // See: https://imgur.com/a/mEfhfiA
@@ -448,7 +449,7 @@ void TuyaMCU_SendCommandWithData(byte cmdType, byte* data, int payload_len) {
 	
 	byte check_sum = (0xFF + cmdType + (payload_len >> 8) + (payload_len & 0xFF));
 
-	UART_InitUART(g_baudRate, 0, false);
+	//UART_InitUART(g_baudRate, 0, false);
 	if (CFG_HasFlag(OBK_FLAG_TUYAMCU_USE_QUEUE)) {
 		tuyaMCUPacket_t *p = TUYAMCU_AddToQueue(payload_len + 4);
 		p->data[0] = cmdType;
@@ -1075,7 +1076,13 @@ void TuyaMCU_SendNetworkStatus()
 		state = TUYA_NETWORK_STATUS_AP_MODE;
 	}
 	else if (Main_HasWiFiConnected() != 0) {
-		state = Main_HasMQTTConnected() != 0 ? TUYA_NETWORK_STATUS_CONNECTED_TO_CLOUD : TUYA_NETWORK_STATUS_CONNECTED_TO_ROUTER;
+		if (g_cfg.mqtt_host[0] == 0) {
+			// if not MQTT configured at all
+			state = TUYA_NETWORK_STATUS_CONNECTED_TO_CLOUD;
+		} else {
+			// otherwise, wait for MQTT connection
+			state = Main_HasMQTTConnected() != 0 ? TUYA_NETWORK_STATUS_CONNECTED_TO_CLOUD : TUYA_NETWORK_STATUS_CONNECTED_TO_ROUTER;
+		}
 	}
 	// allow override
 	if (state < g_defaultTuyaMCUWiFiState) {
@@ -1582,6 +1589,8 @@ void TuyaMCU_PublishDPToBerry(const byte *data, int ofs) {
 
 	}
 }
+#define CALIB_IF_NONZERO(x,d) if(x) { x += d; }
+
 void TuyaMCU_ParseStateMessage(const byte* data, int len) {
 	tuyaMCUMapping_t* mapping;
 	int ofs;
@@ -1686,9 +1695,9 @@ void TuyaMCU_ParseStateMessage(const byte* data, int len) {
 						iC = (data[ofs + 6] << 16) | (data[ofs + 7] << 8) | data[ofs + 8];
 						iP = (data[ofs + 9] << 16) | (data[ofs + 10] << 8) | data[ofs + 11];
 						// calibration
-						iV += mapping->delta;
-						iC += mapping->delta2;
-						iP += mapping->delta3;
+						CALIB_IF_NONZERO(iV, mapping->delta);
+						CALIB_IF_NONZERO(iC, mapping->delta2);
+						CALIB_IF_NONZERO(iP, mapping->delta3);
 						if (mapping->channel < 0) {
 							CHANNEL_SetFirstChannelByType(ChType_Voltage_div10, iV);
 							CHANNEL_SetFirstChannelByType(ChType_Current_div1000, iC);
@@ -1720,9 +1729,9 @@ void TuyaMCU_ParseStateMessage(const byte* data, int len) {
 						// freq
 						iF = data[ofs + 13 + 4] << 8 | data[ofs + 14 + 4];
 						// calibration
-						iV += mapping->delta;
-						iC += mapping->delta2;
-						iP += mapping->delta3;
+						CALIB_IF_NONZERO(iV, mapping->delta);
+						CALIB_IF_NONZERO(iC, mapping->delta2);
+						CALIB_IF_NONZERO(iP, mapping->delta3);
 						if (mapping->channel < 0) {
 							CHANNEL_SetFirstChannelByType(ChType_Voltage_div10, iV);
 							CHANNEL_SetFirstChannelByType(ChType_Current_div1000, iC);
@@ -1754,9 +1763,9 @@ void TuyaMCU_ParseStateMessage(const byte* data, int len) {
 						// power
 						iP = data[ofs + 6 + 4] << 8 | data[ofs + 7 + 4];
 						// calibration
-						iV += mapping->delta;
-						iC += mapping->delta2;
-						iP += mapping->delta3;
+						CALIB_IF_NONZERO(iV, mapping->delta);
+						CALIB_IF_NONZERO(iC, mapping->delta2);
+						CALIB_IF_NONZERO(iP, mapping->delta3);
 						if (mapping->channel < 0) {
 							CHANNEL_SetFirstChannelByType(ChType_Voltage_div10, iV);
 							CHANNEL_SetFirstChannelByType(ChType_Current_div1000, iC);
@@ -2155,6 +2164,35 @@ commandResult_t TuyaMCU_FakePacket(const void* context, const char* cmd, const c
 	TuyaMCU_ProcessIncoming(packet, c);
 	return CMD_RES_OK;
 }
+
+commandResult_t Cmd_TuyaMCU_SetBatteryAckDelay(const void* context, const char* cmd, const char* args, int cmdFlags) {
+	int delay;
+
+	Tokenizer_TokenizeString(args, 0);
+	Tokenizer_CheckArgsCountAndPrintWarning(args, 1);
+
+	delay = Tokenizer_GetArgInteger(0);
+
+	if (!Tokenizer_IsArgInteger(0)) {
+		addLogAdv(LOG_INFO, LOG_FEATURE_TUYAMCU, "SetBatteryAckDelay: requires 1 argument [delay in seconds]\n");
+		return CMD_RES_NOT_ENOUGH_ARGUMENTS;
+	}
+
+	if (delay < 0) {
+		addLogAdv(LOG_INFO, LOG_FEATURE_TUYAMCU, "SetBatteryAckDelay: delay must be positive\n");
+		return CMD_RES_BAD_ARGUMENT;
+	}
+
+	if (delay > 60) {
+		addLogAdv(LOG_INFO, LOG_FEATURE_TUYAMCU, "SetBatteryAckDelay: delay too long, max 60 seconds\n");
+		return CMD_RES_BAD_ARGUMENT;
+	}
+
+	g_tuyaMCUBatteryAckDelay = delay;
+
+	return CMD_RES_OK;
+}
+
 void TuyaMCU_RunWiFiUpdateAndPackets() {
 	//addLogAdv(LOG_INFO, LOG_FEATURE_TUYAMCU,"WifiCheck %d ", wifi_state_timer);
 	/* Monitor WIFI and MQTT connection and apply Wifi state
@@ -2361,6 +2399,11 @@ void TuyaMCU_RunStateMachine_BatteryPowered() {
 		break;
 	case TM0_STATE_AWAITING_STATES:
 		if (g_tuyaNextRequestDelay <= 0) {
+			if (g_tuyaMCUBatteryAckDelay > 0) {
+				g_tuyaMCUBatteryAckDelay--;
+				break;
+			}
+
 			byte dat = 0x00;
 			if (g_tuyaMCUConfirmationsToSend_0x08 > 0) {
 				g_tuyaMCUConfirmationsToSend_0x08--;
@@ -2637,6 +2680,12 @@ void TuyaMCU_Init()
 	//cmddetail:"fn":"NULL);","file":"driver/drv_tuyaMCU.c","requires":"",
 	//cmddetail:"examples":""}
 	CMD_RegisterCommand("tuyaMcu_setupLED", Cmd_TuyaMCU_SetupLED, NULL);
+
+	//cmddetail:{"name":"Cmd_TuyaMCU_SetBatteryAckDelay","args":"[ackDelay]",
+	//cmddetail:"descr":"Defines the delay before the ACK is sent to TuyaMCU sending the device to sleep. Default value is 0 seconds.",
+	//cmddetail:"fn":"NULL);","file":"driver/drv_tuyaMCU.c","requires":"",
+	//cmddetail:"examples":""}
+	CMD_RegisterCommand("tuyaMcu_setBatteryAckDelay", Cmd_TuyaMCU_SetBatteryAckDelay, NULL);
 }
 
 

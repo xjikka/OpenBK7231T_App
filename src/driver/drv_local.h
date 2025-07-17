@@ -52,6 +52,9 @@ void KP18058_Init();
 
 void SM15155E_Init();
 
+void DRV_GosundSW2_Init();
+void DRV_GosundSW2_RunFrame();
+
 void SM16703P_Init();
 void SM16703P_setPixel(int pixel, int r, int g, int b);
 void SM16703P_setPixelWithBrig(int pixel, int r, int g, int b);
@@ -167,6 +170,9 @@ void RN8029_RunEverySecond(void);
 
 void MAX6675_Init(void);
 void MAX6675_RunEverySecond(void);
+
+void MAX31855_Init();
+void MAX31855_RunEverySecond();
 
 void PWMG_Init();
 
