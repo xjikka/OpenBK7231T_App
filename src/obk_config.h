@@ -74,7 +74,7 @@
 #define ENABLE_MQTT								1
 #define ENABLE_TASMOTADEVICEGROUPS				1
 #define ENABLE_NTP								1
-// #define ENABLE_NTP_DST						1
+//#define ENABLE_TIME_DST						1
 #define ENABLE_DRIVER_BL0937					1
 #define ENABLE_DRIVER_DHT						1
 #define ENABLE_TASMOTA_JSON						1
@@ -123,6 +123,8 @@
 #define ENABLE_DRIVER_PINMUTEX					1
 #define ENABLE_DRIVER_TESTSPIFLASH				1
 
+#define ENABLE_DRIVER_GIRIERMCU					1
+
 #define ENABLE_HTTP_OVERRIDE					1
 #define ENABLE_DRIVER_TCL						1
 #define ENABLE_DRIVER_PIR						1
@@ -132,7 +134,7 @@
 #define ENABLE_TASMOTADEVICEGROUPS				1
 #define ENABLE_LITTLEFS							1
 #define ENABLE_NTP								1
-#define ENABLE_NTP_DST							1
+#define ENABLE_TIME_DST							1
 #define ENABLE_DRIVER_LED						1
 #define ENABLE_DRIVER_BL0937					1
 #define ENABLE_DRIVER_BL0942					1
@@ -157,7 +159,7 @@
 #define ENABLE_DRIVER_PT6523					1
 #define ENABLE_DRIVER_MAX6675					1
 #define ENABLE_DRIVER_TEXTSCROLLER				1
-#define ENABLE_NTP_SUNRISE_SUNSET				1
+#define ENABLE_TIME_SUNRISE_SUNSET				1
 // parse things like $CH1 or $hour etc
 #define ENABLE_EXPAND_CONSTANT					1
 #define ENABLE_DRIVER_DHT						1
@@ -194,7 +196,7 @@
 #define ENABLE_TASMOTADEVICEGROUPS				1
 #define ENABLE_LITTLEFS							1
 #define ENABLE_NTP								1
-// #define ENABLE_NTP_DST						1
+// #define ENABLE_TIME_DST						1
 #define ENABLE_CALENDAR_EVENTS					1
 #define ENABLE_DRIVER_LED						1
 #define ENABLE_DRIVER_BL0937					1
@@ -234,6 +236,8 @@
 //#define ENABLE_LFS_SPI						1
 //#define ENABLE_DRIVER_TESTSPIFLASH			1
 
+//#define	ENABLE_DRIVER_UART_TCP					1
+
 // #define	ENABLE_DRIVER_PIR					1
 //#define ENABLE_DRIVER_BKPARTITIONS				1
 #define ENABLE_HA_DISCOVERY						1
@@ -242,8 +246,8 @@
 #define ENABLE_TASMOTADEVICEGROUPS				1
 #define ENABLE_LITTLEFS							1
 #define ENABLE_NTP								1
-// #define ENABLE_NTP_DST						1
-#define ENABLE_NTP_SUNRISE_SUNSET				1
+// #define ENABLE_TIME_DST						1
+#define ENABLE_TIME_SUNRISE_SUNSET				1
 #define ENABLE_DRIVER_LED						1
 #define ENABLE_DRIVER_BL0937					1
 #define ENABLE_DRIVER_BL0942					1
@@ -272,6 +276,7 @@
 #define ENABLE_DRIVER_SM16703P					1
 #define ENABLE_DRIVER_PIXELANIM					1
 #define ENABLE_DRIVER_SM15155E					1
+
 #endif
 // parse things like $CH1 or $hour etc
 #define ENABLE_EXPAND_CONSTANT					1
@@ -361,7 +366,7 @@
 #define ENABLE_MQTT								1
 #define ENABLE_TASMOTADEVICEGROUPS				1
 #define ENABLE_NTP								1
-//#define ENABLE_NTP_DST						1
+//#define ENABLE_TIME_DST						1
 #define ENABLE_DRIVER_BL0937					1
 #define ENABLE_DRIVER_LED 						1
 #define ENABLE_DRIVER_WEMO						1
@@ -389,7 +394,7 @@
 #define ENABLE_MQTT								1
 #define ENABLE_I2C								1
 #define ENABLE_NTP								1
-//#define ENABLE_NTP_DST						1
+//#define ENABLE_TIME_DST						1
 #define ENABLE_DRIVER_LED						1
 #define ENABLE_DRIVER_TUYAMCU					1
 #define ENABLE_LITTLEFS							1
@@ -519,6 +524,17 @@
 
 #elif PLATFORM_ESP8266
 
+//#define ENABLE_MULTIPINI2CSCANNER				1
+//#define ENABLE_DRIVER_MAX72XX					1
+//#define ENABLE_SIMPLEEEPROM						1
+//#define ENABLE_OBK_BERRY						1
+//#define ENABLE_DRIVER_CHARTS					1
+//#define ENABLE_DRIVER_OPENWEATHERMAP			1
+//#define ENABLE_DRIVER_DHT						1
+
+
+
+
 #define ENABLE_SEND_POSTANDGET					1
 #define NO_CHIP_TEMPERATURE						1
 #define ENABLE_HA_DISCOVERY						1
@@ -592,7 +608,6 @@
 // allow moving average energy calculation +180 bytes
 #define ENABLE_BL_MOVINGAVG					1
 #endif
-
 
 // closing OBK_CONFIG_H
 #endif
