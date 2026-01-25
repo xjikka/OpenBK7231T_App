@@ -121,6 +121,7 @@ OBKM_SRC  += $(OBK_SRCS)driver/drv_multiPinI2CScanner.c
 OBKM_SRC  += $(OBK_SRCS)driver/drv_ntp.c
 OBKM_SRC  += $(OBK_SRCS)driver/drv_deviceclock.c
 OBKM_SRC  += $(OBK_SRCS)driver/drv_ds3231.c
+OBKM_SRC  += $(OBK_SRCS)driver/drv_neo6m.c
 OBKM_SRC  += $(OBK_SRCS)libraries/obktime/obktime.c
 OBKM_SRC  += $(OBK_SRCS)driver/drv_timed_events.c
 OBKM_SRC  += $(OBK_SRCS)driver/drv_openWeatherMap.c
@@ -171,7 +172,9 @@ OBKM_SRC  += $(OBK_SRCS)i2c/drv_i2c_mcp23017.c
 OBKM_SRC  += $(OBK_SRCS)i2c/drv_i2c_tc74.c
 
 OBKM_SRC_CXX += $(OBK_SRCS)driver/drv_ir.cpp
+OBKM_SRC_CXX += $(OBK_SRCS)driver/drv_rc.cpp
 OBKM_SRC_CXX += $(OBK_SRCS)driver/drv_ir_new.cpp
+OBKM_SRC_CXX += $(OBK_SRCS)libraries/rc-switch/src/RCSwitch.cpp
 OBKM_SRC_CXX += $(OBK_SRCS)libraries/IRremoteESP8266/src/IRac.cpp
 OBKM_SRC_CXX += $(OBK_SRCS)libraries/IRremoteESP8266/src/IRproto.cpp
 OBKM_SRC_CXX += $(OBK_SRCS)libraries/IRremoteESP8266/src/IRrecv.cpp

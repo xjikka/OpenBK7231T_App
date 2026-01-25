@@ -201,6 +201,9 @@ jobs:
             variant: default
           - platform: OpenRTL8720E
             variant: default
+          - platform: OpenLN8825
+            variant: default
+            gcc: apt
 
           # extras for BK7231T
           - platform: OpenBK7231T
@@ -227,6 +230,8 @@ jobs:
             variant: sensors
           - platform: OpenBK7231N
             variant: hlw8112
+          - platform: OpenBK7231N
+            variant: battery
             
           - platform: OpenBL602
             variant: berry
@@ -257,6 +262,9 @@ jobs:
           - platform: OpenBK7238
             variant: irRemoteESP
             gcc: apt
+          - platform: OpenBK7238
+            variant: battery
+            gcc: apt
     steps:
       - name: Source checkout
         uses: actions/checkout@v4
@@ -269,7 +277,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        if: ${{ matrix.platform == 'OpenLN882H' }}
+        if: ${{ matrix.platform == 'OpenLN882H' || matrix.platform == 'OpenLN8825' }}
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: cmake
