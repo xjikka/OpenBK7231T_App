@@ -33,6 +33,9 @@ else ifeq ($(VARIANT),battery)
 OBK_VARIANT = 7
 else ifeq ($(VARIANT),btproxy)
 OBK_VARIANT = 8
+else ifeq ($(VARIANT),xiaomiCompact4)
+OBK_VARIANT = 10
+ESP_FSIZE = 4MB
 else ifeq ($(VARIANT),2M)
 OBK_VARIANT = 1
 ESP_FSIZE = 2MB
@@ -46,6 +49,11 @@ else
 OBK_VARIANT = 0
 endif
 $(info VARIANT is $(VARIANT), OBK_VARIANT is $(OBK_VARIANT))
+
+ESP32_BUILD_DIR = platforms/ESP-IDF/build-32
+ifeq ($(OBK_VARIANT), 10)
+ESP32_BUILD_DIR = platforms/ESP-IDF/build-32-xiaomi
+endif
 
 #TARGET_PLATFORM ?= bk7231t
 #APPS_BUILD_PATH ?= ../bk7231t_os
@@ -139,7 +147,7 @@ sdk/OpenLN8825/project/OpenBeken/app:
 	ln -s "$(shell pwd)/" "sdk/OpenLN8825/project/OpenBeken/app"
 
 .PHONY: prebuild_OpenBK7231N prebuild_OpenBK7231T prebuild_OpenBL602 prebuild_OpenLN882H prebuild_OpenLN8825 
-.PHONY: prebuild_OpenW600 prebuild_OpenW800 prebuild_OpenXR809 prebuild_OpenXR806 prebuild_OpenXR872 prebuild_ESPIDF prebuild_OpenTR6260
+.PHONY: prebuild_OpenW600 prebuild_OpenW800 prebuild_OpenXR809 prebuild_OpenXR806 prebuild_OpenXR806_DCDC prebuild_OpenXR872 prebuild_ESPIDF prebuild_OpenTR6260
 .PHONY: prebuild_OpenRTL87X0C prebuild_OpenBK7238 prebuild_OpenBK7231N_ALT prebuild_OpenBK7231U
 .PHONY: prebuild_OpenBK7231N_ALT prebuild_OpenBK7231T_ALT prebuild_OpenBK7252
 
@@ -218,6 +226,8 @@ prebuild_OpenXR806: berry
 	else echo "prebuild for OpenXR806 not found ... "; \
 	fi
 	
+prebuild_OpenXR806_DCDC: prebuild_OpenXR806
+
 prebuild_OpenXR872: berry
 	git submodule update --init --recursive --depth=1 sdk/OpenXR872
 	@if [ -e platforms/XR872/pre_build.sh ]; then \
@@ -236,6 +246,8 @@ else ifeq ($(OBK_VARIANT), 2)
 	cp platforms/ESP-IDF/partitions-4mb.csv platforms/ESP-IDF/partitions.csv
 else ifeq ($(OBK_VARIANT), 3)
 	cp platforms/ESP-IDF/partitions-2mb.csv platforms/ESP-IDF/partitions.csv
+else ifeq ($(OBK_VARIANT), 10)
+	cp platforms/ESP-IDF/partitions-4mb.csv platforms/ESP-IDF/partitions.csv
 endif
 	@if [ -e platforms/ESP-IDF/pre_build.sh ]; then \
 		echo "prebuild found for ESP-IDF"; \
@@ -400,7 +412,7 @@ prebuild_OpenTXW81X: berry
 
 prebuild_OpenBL616: berry
 	git submodule update --init --recursive --depth=1 sdk/bouffalo_sdk
-	if [ ! -e platforms/BL616/gcc ]; then cd platforms/BL616 && git clone https://github.com/bouffalolab/toolchain_gcc_t-head_linux.git gcc --depth=1; fi 
+	if [ ! -e platforms/BL616/xuantie-gcc-riscv-v2.6.1-linux-x86_64 ]; then cd platforms/BL616 && wget https://github.com/bouffalolab/toolchain/releases/download/default/xuantie-gcc-riscv-v2.6.1-linux-x86_64.tar.xz && tar xJf xuantie-gcc-riscv-v2.6.1-linux-x86_64.tar.xz; fi 
 	@if [ -e platforms/BL616/pre_build.sh ]; then \
 		echo "prebuild found for OpenBL616"; \
 		sh platforms/BL616/pre_build.sh; \
@@ -409,11 +421,19 @@ prebuild_OpenBL616: berry
 
 prebuild_OpenBL602_ALT: berry
 	git submodule update --init --recursive --depth=1 sdk/bouffalo_sdk
-	if [ ! -e platforms/BL616/gcc ]; then cd platforms/BL616 && git clone https://github.com/bouffalolab/toolchain_gcc_t-head_linux.git gcc --depth=1; fi 
+	if [ ! -e platforms/BL616/xuantie-gcc-riscv-v2.6.1-linux-x86_64 ]; then cd platforms/BL616 && wget https://github.com/bouffalolab/toolchain/releases/download/default/xuantie-gcc-riscv-v2.6.1-linux-x86_64.tar.xz && tar xJf xuantie-gcc-riscv-v2.6.1-linux-x86_64.tar.xz; fi 
 	@if [ -e platforms/BL602_ALT/pre_build.sh ]; then \
 		echo "prebuild found for OpenBL602_ALT"; \
 		sh platforms/BL602_ALT/pre_build.sh; \
 	else echo "prebuild for OpenBL602_ALT not found ... "; \
+	fi
+
+prebuild_OpenGD32VW553: berry
+	git submodule update --init --recursive --depth=1 sdk/OpenGD32VW553
+	@if [ -e platforms/GD32VW553/pre_build.sh ]; then \
+		echo "prebuild found for OpenGD32VW553"; \
+		sh platforms/GD32VW553/pre_build.sh; \
+	else echo "prebuild for OpenGD32VW553 not found ... "; \
 	fi
 
 prebuild_OpenRDA5981: berry
@@ -426,6 +446,30 @@ endif
 		echo "prebuild found for OpenRDA5981"; \
 		sh platforms/RDA5981/pre_build.sh; \
 	else echo "prebuild for OpenRDA5981 not found ... "; \
+	fi
+
+prebuild_OpenBK7239N: berry
+ifdef GITHUB_ACTIONS
+	pip3 install setuptools pycryptodome future pycparser click-option-group click cffi six pandas
+	ln -s $(ARM_NONE_EABI_GCC_PATH)/../ /opt/gcc-arm-none-eabi-10.3-2021.10
+endif
+	git submodule update --init --recursive --depth=1 sdk/OpenBK7239N
+	@if [ -e platforms/BK7239N/pre_build.sh ]; then \
+		echo "prebuild found for OpenBK7239N"; \
+		sh platforms/BK7239N/pre_build.sh; \
+	else echo "prebuild for OpenBK7239N not found ... "; \
+	fi
+
+prebuild_OpenBK7236: berry
+ifdef GITHUB_ACTIONS
+	pip3 install setuptools pycryptodome future pycparser click-option-group click cffi six pandas
+	ln -s $(ARM_NONE_EABI_GCC_PATH)/../ /opt/gcc-arm-none-eabi-10.3-2021.10
+endif
+	git submodule update --init --recursive --depth=1 sdk/OpenBK7239N
+	@if [ -e platforms/BK7236/pre_build.sh ]; then \
+		echo "prebuild found for OpenBK7236"; \
+		sh platforms/BK7236/pre_build.sh; \
+	else echo "prebuild for OpenBK7236 not found ... "; \
 	fi
 
 # Build main binaries
@@ -450,17 +494,41 @@ OpenXR872: prebuild_OpenXR872 sdk/OpenXR872/project/demo/hello_demo/shared
 	cp sdk/OpenXR872/project/demo/hello_demo/image/xr872/xr_system.img output/$(APP_VERSION)/OpenXR872_$(APP_VERSION).img
 	cp sdk/OpenXR872/project/demo/hello_demo/image/xr872/xr_system_img_xz.img output/$(APP_VERSION)/OpenXR872_$(APP_VERSION)_ota.img
 
-.PHONY: OpenXR806
-OpenXR806: prebuild_OpenXR806 sdk/OpenXR806/project/demo/sharedApp/shared
-	$(MAKE) -C sdk/OpenXR806/src CC_DIR=$(ARM_NONE_EABI_GCC_PATH) APP_VERSION=$(APP_VERSION) OPLATFORM=3 OBK_VARIANT=$(OBK_VARIANT) -j $(shell nproc) --no-print-directory
-	$(MAKE) -C sdk/OpenXR806/src install CC_DIR=$(ARM_NONE_EABI_GCC_PATH) APP_VERSION=$(APP_VERSION) OPLATFORM=3 OBK_VARIANT=$(OBK_VARIANT) -j $(shell nproc) --no-print-directory
-	$(MAKE) -C sdk/OpenXR806/project/demo/sharedApp/gcc CC_DIR=$(ARM_NONE_EABI_GCC_PATH) APP_VERSION=$(APP_VERSION) OPLATFORM=3 OBK_VARIANT=$(OBK_VARIANT) -j $(shell nproc) --no-print-directory
-	$(MAKE) -C sdk/OpenXR806/project/demo/sharedApp/gcc image CC_DIR=$(ARM_NONE_EABI_GCC_PATH) APP_VERSION=$(APP_VERSION) OPLATFORM=3 OBK_VARIANT=$(OBK_VARIANT) -j $(shell nproc) --no-print-directory
-	$(MAKE) -C sdk/OpenXR806/project/demo/sharedApp/gcc image_xz CC_DIR=$(ARM_NONE_EABI_GCC_PATH) APP_VERSION=$(APP_VERSION) OPLATFORM=3 OBK_VARIANT=$(OBK_VARIANT) -j $(shell nproc) --no-print-directory
+XR806_SDK_DIR := sdk/OpenXR806
+XR806_BOOTLOADER_PRJ := bootloader
+XR806_SHAREDAPP_PRJ := demo/sharedApp
+XR806_BOOTLOADER_DEFCONFIG := project/bootloader/gcc/defconfig
+XR806_SHAREDAPP_DEFCONFIG := project/demo/sharedApp/gcc/defconfig
+XR806_BOOTLOADER_DCDC_DEFCONFIG := project/bootloader/gcc/defconfig_dcdc
+XR806_SHAREDAPP_DCDC_DEFCONFIG := project/demo/sharedApp/gcc/defconfig_dcdc
+XR806_BUILD_ARGS := CC_DIR=$(ARM_NONE_EABI_GCC_PATH) APP_VERSION=$(APP_VERSION) OPLATFORM=3 OBK_VARIANT=$(OBK_VARIANT) -j $(shell nproc) --no-print-directory
+XR806_DCDC_BUILD_ARGS := CC_DIR=$(ARM_NONE_EABI_GCC_PATH) APP_VERSION=$(APP_VERSION)_DCDC OPLATFORM=3 OBK_VARIANT=9 -j $(shell nproc) --no-print-directory
+
+.PHONY: OpenXR806 OpenXR806_DCDC
+OpenXR806: prebuild_OpenXR806 $(XR806_SDK_DIR)/project/demo/sharedApp/shared
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_BOOTLOADER_PRJ) KCONFIG_DEFCONFIG=$(XR806_BOOTLOADER_DEFCONFIG) defconfig --no-print-directory
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_BOOTLOADER_PRJ) build_clean --no-print-directory
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_BOOTLOADER_PRJ) $(XR806_BUILD_ARGS) build
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_SHAREDAPP_PRJ) KCONFIG_DEFCONFIG=$(XR806_SHAREDAPP_DEFCONFIG) defconfig --no-print-directory
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_SHAREDAPP_PRJ) build_clean --no-print-directory
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_SHAREDAPP_PRJ) $(XR806_BUILD_ARGS) build
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_SHAREDAPP_PRJ) $(XR806_BUILD_ARGS) image_xz
 	mkdir -p output/$(APP_VERSION)
-	cp sdk/OpenXR806/project/demo/sharedApp/image/xr806/xr_system.img output/$(APP_VERSION)/OpenXR806_$(APP_VERSION).img
-	cp sdk/OpenXR806/project/demo/sharedApp/image/xr806/xr_system_img_xz.img output/$(APP_VERSION)/OpenXR806_$(APP_VERSION)_ota.img
-	
+	cp $(XR806_SDK_DIR)/project/demo/sharedApp/image/xr806/xr_system.img output/$(APP_VERSION)/OpenXR806_$(APP_VERSION).img
+	cp $(XR806_SDK_DIR)/project/demo/sharedApp/image/xr806/xr_system_img_xz.img output/$(APP_VERSION)/OpenXR806_$(APP_VERSION)_ota.img
+
+OpenXR806_DCDC: prebuild_OpenXR806_DCDC $(XR806_SDK_DIR)/project/demo/sharedApp/shared
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_BOOTLOADER_PRJ) KCONFIG_DEFCONFIG=$(XR806_BOOTLOADER_DCDC_DEFCONFIG) defconfig --no-print-directory
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_BOOTLOADER_PRJ) build_clean --no-print-directory
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_BOOTLOADER_PRJ) $(XR806_DCDC_BUILD_ARGS) build
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_SHAREDAPP_PRJ) KCONFIG_DEFCONFIG=$(XR806_SHAREDAPP_DCDC_DEFCONFIG) defconfig --no-print-directory
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_SHAREDAPP_PRJ) build_clean --no-print-directory
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_SHAREDAPP_PRJ) $(XR806_DCDC_BUILD_ARGS) build
+	$(MAKE) -C $(XR806_SDK_DIR) PRJ=$(XR806_SHAREDAPP_PRJ) $(XR806_DCDC_BUILD_ARGS) image_xz
+	mkdir -p output/$(APP_VERSION)
+	cp $(XR806_SDK_DIR)/project/demo/sharedApp/image/xr806/xr_system.img output/$(APP_VERSION)/OpenXR806_$(APP_VERSION)_DCDC.img
+	cp $(XR806_SDK_DIR)/project/demo/sharedApp/image/xr806/xr_system_img_xz.img output/$(APP_VERSION)/OpenXR806_$(APP_VERSION)_DCDC_ota.img
+
 .PHONY: OpenXR809
 OpenXR809: prebuild_OpenXR809 sdk/OpenXR809/project/oxr_sharedApp/shared
 	$(MAKE) -C sdk/OpenXR809/src CC_DIR=$(ARM_NONE_EABI_GCC_PATH) APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT) --no-print-directory  -j $(shell nproc)
@@ -528,11 +596,11 @@ OpenLN8825: prebuild_OpenLN8825 sdk/OpenLN8825/project/OpenBeken/app
 
 .PHONY: OpenESP32
 OpenESP32: prebuild_ESPIDF
-	IDF_TARGET="esp32" APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT) cmake platforms/ESP-IDF -B platforms/ESP-IDF/build-32 
-	IDF_TARGET="esp32" APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT) cmake --build ./platforms/ESP-IDF/build-32 -j $(shell nproc)
+	IDF_TARGET="esp32" APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT) cmake platforms/ESP-IDF -B $(ESP32_BUILD_DIR)
+	IDF_TARGET="esp32" APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT) cmake --build ./$(ESP32_BUILD_DIR) -j $(shell nproc)
 	mkdir -p output/$(APP_VERSION)
-	python3 -m esptool -c esp32 merge_bin -o output/$(APP_VERSION)/OpenESP32_$(APP_VERSION).factory.bin --flash_mode dio --flash_size $(ESP_FSIZE) 0x1000 ./platforms/ESP-IDF/build-32/bootloader/bootloader.bin 0x8000 ./platforms/ESP-IDF/build-32/partition_table/partition-table.bin 0x10000 ./platforms/ESP-IDF/build-32/OpenBeken.bin
-	cp ./platforms/ESP-IDF/build-32/OpenBeken.bin output/$(APP_VERSION)/OpenESP32_$(APP_VERSION).img
+	python3 -m esptool -c esp32 merge_bin -o output/$(APP_VERSION)/OpenESP32_$(APP_VERSION).factory.bin --flash_mode dio --flash_size $(ESP_FSIZE) 0x1000 ./$(ESP32_BUILD_DIR)/bootloader/bootloader.bin 0x8000 ./$(ESP32_BUILD_DIR)/partition_table/partition-table.bin 0x10000 ./$(ESP32_BUILD_DIR)/OpenBeken.bin
+	cp ./$(ESP32_BUILD_DIR)/OpenBeken.bin output/$(APP_VERSION)/OpenESP32_$(APP_VERSION).img
 
 .PHONY: OpenESP32C3
 OpenESP32C3: prebuild_ESPIDF
@@ -607,7 +675,8 @@ OpenTR6260: prebuild_OpenTR6260
 	if [ ! -e sdk/OpenTR6260/toolchain/nds32le-elf-mculib-v3 ]; then cd sdk/OpenTR6260/toolchain && xz -d < nds32le-elf-mculib-v3.txz | tar xvf - > /dev/null; fi
 	cd sdk/OpenTR6260/scripts && APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT) bash build_tr6260s1.sh
 	mkdir -p output/$(APP_VERSION)
-	cp sdk/OpenTR6260/out/tr6260s1/standalone/tr6260s1_0x007000.bin output/$(APP_VERSION)/OpenTR6260_$(APP_VERSION).bin
+	cp sdk/OpenTR6260/out/tr6260s1/standalone/tr6260s1_0x004000.bin output/$(APP_VERSION)/OpenTR6260_$(APP_VERSION).bin
+	cp sdk/OpenTR6260/out/tr6260s1/standalone/tr6260s1_ota.bin.xz output/$(APP_VERSION)/OpenTR6260_$(APP_VERSION)_ota.img
 	
 .PHONY: OpenRTL87X0C
 OpenRTL87X0C: prebuild_OpenRTL87X0C
@@ -692,7 +761,23 @@ OpenBK7231U: prebuild_OpenBK7231U
 
 .PHONY: OpenBK7252
 OpenBK7252: prebuild_OpenBK7252
-	cd sdk/beken_freertos_sdk && ARM_GCC_TOOLCHAIN=$(PWD)/sdk/beken_freertos_sdk/toolchain/arm-none-eabi/bin/ OBK_VARIANT=$(OBK_VARIANT) sh build.sh bk7251 $(APP_VERSION)
+	cd sdk/beken_freertos_sdk && { \
+		boot=./tools/beken_packager/bootloader_bk7251_uart2_v1.0.15_enc.bin; \
+		raw=./tools/beken_packager/bootloader_bk7251_uart2_v1.0.15.bin; \
+		patched=./tools/beken_packager/bootloader_bk7251_uart2_v1.0.15_tuya_ota_patch.bin; \
+		patched_enc=./tools/beken_packager/bootloader_bk7251_uart2_v1.0.15_tuya_ota_patch_enc.bin; \
+		bak=$$boot.bk7252-tuya-patch; \
+		cp "$$boot" "$$bak" || exit $$?; \
+		status=0; \
+		python ../../platforms/BK723x/patch_bk7252_tuya_bootloader.py "$$raw" "$$patched" "$(PWD)/sdk/beken_freertos_sdk/toolchain/arm-none-eabi/bin" ../../platforms/BK723x/bk7252_tuya_ota_write_wrap.c && \
+			./tools/crc_binary/encrypt_n "$$patched" 510fb093 a3cbeadc 5993a17e c7adeb03 0 && \
+			mv -f "$$patched_enc" "$$boot" && \
+			./tools/rt_partition_tool/rt_partition_tool_cli-x64 "$$boot" ../../platforms/BK723x/bk7252_partition_2M.json && \
+			ARM_GCC_TOOLCHAIN=$(PWD)/sdk/beken_freertos_sdk/toolchain/arm-none-eabi/bin/ OBK_VARIANT=$(OBK_VARIANT) sh build.sh bk7251 $(APP_VERSION) || status=$$?; \
+		rm -f "$$patched" "$$patched_enc"; \
+		mv -f "$$bak" "$$boot"; \
+		exit $$status; \
+	}
 	mkdir -p output/$(APP_VERSION)
 	cp sdk/beken_freertos_sdk/out/bk7251.bin output/$(APP_VERSION)/OpenBK7252_${APP_VERSION}.bin
 	cp sdk/beken_freertos_sdk/out/bk7251_QIO.bin output/$(APP_VERSION)/OpenBK7252_QIO_${APP_VERSION}.bin
@@ -773,17 +858,70 @@ OpenRDA5981: prebuild_OpenRDA5981
 
 .PHONY: OpenBL616
 OpenBL616: prebuild_OpenBL616
-	cd ./platforms/BL616 && PATH="$(PATH):$(PWD)/platforms/BL616/gcc/bin" $(MAKE) CHIP=bl616 BOARD=bl616dk APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT)
+	cd ./platforms/BL616 && PATH="$(PWD)/platforms/BL616/xuantie-gcc-riscv-v2.6.1-linux-x86_64/bin:$(PATH)" $(MAKE) CHIP=bl616 BOARD=bl616dk APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT)
 	mkdir -p output/$(APP_VERSION)
 	cp ./platforms/BL616/build/build_out/OpenBeken_bl616.bin output/$(APP_VERSION)/OpenBL616_${APP_VERSION}.bin
 	cp ./platforms/BL616/build/build_out/OpenBeken_bl616.xz.ota output/$(APP_VERSION)/OpenBL616_${APP_VERSION}_OTA.bin.xz.ota
 
 .PHONY: OpenBL602_ALT
 OpenBL602_ALT: prebuild_OpenBL602_ALT
-	cd ./platforms/BL602_ALT && PATH="$(PATH):$(PWD)/platforms/BL616/gcc/bin" $(MAKE) CHIP=bl602 BOARD=bl602dk APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT)
+	cd ./platforms/BL602_ALT && PATH="$(PWD)/platforms/BL616/xuantie-gcc-riscv-v2.6.1-linux-x86_64/bin:$(PATH)" $(MAKE) CHIP=bl602 BOARD=bl602dk APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT)
 	mkdir -p output/$(APP_VERSION)
 	dd conv=notrunc bs=1K skip=4 if=platforms/BL602_ALT/build/build_out/OpenBeken_bl602.bin of=output/$(APP_VERSION)/OpenBL602_ALT_${APP_VERSION}.bin
 	cp ./platforms/BL602_ALT/build/build_out/OpenBeken_bl602.xz.ota output/$(APP_VERSION)/OpenBL602_ALT_${APP_VERSION}_OTA.bin.xz.ota
+
+.PHONY: OpenGD32VW553
+OpenGD32VW553: prebuild_OpenGD32VW553
+	cd sdk/OpenGD32VW553 && APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT) ./cmake_build.sh ../../../platforms/GD32VW553
+	mkdir -p output/$(APP_VERSION)
+	cp sdk/OpenGD32VW553/scripts/images/image-all.bin output/$(APP_VERSION)/OpenGD32VW553_$(APP_VERSION).bin
+	cp sdk/OpenGD32VW553/scripts/images/image-ota.bin output/$(APP_VERSION)/OpenGD32VW553_$(APP_VERSION)_ota.img
+	md5sum sdk/OpenGD32VW553/scripts/images/image-ota.bin | awk '{print $1}' | xxd -r -p >> output/$(APP_VERSION)/OpenGD32VW553_$(APP_VERSION)_ota.img
+	
+.PHONY: OpenBK7239N
+OpenBK7239N: prebuild_OpenBK7239N
+	cd sdk/OpenBK7239N && make bk7239n PROJECT=app APP_DIR=../../platforms/BK7239N PROJECT_DIR=../../platforms/BK7239N APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT) CONFIG_TOOLCHAIN_PATH=$(ARM_NONE_EABI_GCC_PATH)
+	mkdir -p output/$(APP_VERSION)
+	cp sdk/OpenBK7239N/build/bk7239n/BK7239N/package/all-app.bin output/$(APP_VERSION)/OpenBK7239N_QIO_$(APP_VERSION).bin
+	cp sdk/OpenBK7239N/build/bk7239n/BK7239N/package/app_pack.rbl output/$(APP_VERSION)/OpenBK7239N_${APP_VERSION}.rbl
+	
+.PHONY: OpenBK7236
+OpenBK7236: prebuild_OpenBK7236
+	cd sdk/OpenBK7239N && make bk7236 PROJECT=app APP_DIR=../../platforms/BK7236 PROJECT_DIR=../../platforms/BK7236 APP_VERSION=$(APP_VERSION) OBK_VARIANT=$(OBK_VARIANT) CONFIG_TOOLCHAIN_PATH=$(ARM_NONE_EABI_GCC_PATH)
+	mkdir -p output/$(APP_VERSION)
+	cp sdk/OpenBK7239N/build/bk7236/BK7236/package/all-app.bin output/$(APP_VERSION)/OpenBK7236_QIO_$(APP_VERSION).bin
+	cp sdk/OpenBK7239N/build/bk7236/BK7236/package/app_pack.rbl output/$(APP_VERSION)/OpenBK7236_${APP_VERSION}.rbl
+
+OPENRTL8196C_SDK ?= $(or $(firstword $(wildcard sdk/OpenRTL8196C ../OpenRTL8196C)),sdk/OpenRTL8196C)
+OPENRTL8196C_GIT ?= https://github.com/openshwprojects/OpenRTL8196C.git
+# Codescape MIPS bare-metal GCC, downloaded here unless MIPS_GCC_BIN is set or the SDK has its own toolchain/
+MIPS_MTI_VERSION = 2019.09-03
+MIPS_MTI_DIR = sdk/mips-mti-elf
+MIPS_MTI_BIN = $(CURDIR)/$(MIPS_MTI_DIR)/mips-mti-elf/$(MIPS_MTI_VERSION)/bin
+MIPS_MTI_URL = https://codescape.mips.com/components/toolchain/$(MIPS_MTI_VERSION)/Codescape.GNU.Tools.Package.$(MIPS_MTI_VERSION).for.MIPS.MTI.Bare.Metal.CentOS-6.x86_64.tar.gz
+
+.PHONY: prebuild_OpenRTL8196C OpenRTL8196C
+prebuild_OpenRTL8196C: berry
+	if [ ! -e $(OPENRTL8196C_SDK)/tools/build_obk.py ]; then git clone --depth=1 $(OPENRTL8196C_GIT) $(OPENRTL8196C_SDK); fi
+	if [ -z "$$MIPS_GCC_BIN" ] && [ ! -e $(MIPS_MTI_BIN)/mips-mti-elf-gcc ] && \
+	   ! ls $(OPENRTL8196C_SDK)/toolchain/mips-mti-elf/*/bin/mips-mti-elf-gcc* >/dev/null 2>&1; then \
+		mkdir -p $(MIPS_MTI_DIR) && \
+		curl -sSfL $(MIPS_MTI_URL) | tar -xz -C $(MIPS_MTI_DIR) \
+			mips-mti-elf/$(MIPS_MTI_VERSION)/bin mips-mti-elf/$(MIPS_MTI_VERSION)/libexec \
+			mips-mti-elf/$(MIPS_MTI_VERSION)/lib/gcc mips-mti-elf/$(MIPS_MTI_VERSION)/mips-mti-elf/bin; \
+	fi
+	@if [ -e platforms/RTL8196C/pre_build.sh ]; then \
+		echo "prebuild found for OpenRTL8196C"; \
+		sh platforms/RTL8196C/pre_build.sh; \
+	else echo "prebuild for OpenRTL8196C not found ... "; \
+	fi
+
+OpenRTL8196C: prebuild_OpenRTL8196C
+	MIPS_GCC_BIN="$${MIPS_GCC_BIN:-$(MIPS_MTI_BIN)}" python3 $(OPENRTL8196C_SDK)/tools/build_obk.py --obk "$(CURDIR)" --ver "$(APP_VERSION)"
+	mkdir -p output/$(APP_VERSION)
+	cp $(OPENRTL8196C_SDK)/build/obk/openbeken_rtl8196c.bin output/$(APP_VERSION)/OpenRTL8196C_$(APP_VERSION).bin
+	cp $(OPENRTL8196C_SDK)/build/obk/openbeken_rtl8196c.img output/$(APP_VERSION)/OpenRTL8196C_$(APP_VERSION)_ota.img
+	MIPS_GCC_BIN="$${MIPS_GCC_BIN:-$(MIPS_MTI_BIN)}" python3 $(OPENRTL8196C_SDK)/tools/mkinstall.py -o output/$(APP_VERSION)/OpenRTL8196C_QIO_$(APP_VERSION).bin
 
 # Add custom Makefile if required
 -include custom.mk
@@ -794,6 +932,7 @@ clean:
 	-test -d ./sdk/OpenXR809 && $(MAKE) -C sdk/OpenXR809/src clean
 	-test -d ./sdk/OpenXR809 && $(MAKE) -C sdk/OpenXR809/project/oxr_sharedApp/gcc clean
 	-test -d ./sdk/OpenXR806 && $(MAKE) -C sdk/OpenXR806/src clean
+	-test -d ./sdk/OpenXR806 && $(MAKE) -C sdk/OpenXR806/project/bootloader/gcc clean
 	-test -d ./sdk/OpenXR806 && $(MAKE) -C sdk/OpenXR806/project/demo/sharedApp/gcc clean
 	-test -d ./sdk/OpenXR872 && $(MAKE) -C sdk/OpenXR872/src clean
 	-test -d ./sdk/OpenXR872 && $(MAKE) -C sdk/OpenXR872/project/demo/hello_demo/gcc clean
@@ -810,6 +949,7 @@ clean:
 	-test -d ./sdk/beken_freertos_sdk && $(MAKE) -C sdk/beken_freertos_sdk clean
 	-test -d ./sdk/OpenTXW81X && $(MAKE) -C sdk/OpenTXW81X/project clean
 	-test -d ./sdk/OpenRDA5981 && $(MAKE) -C sdk/OpenRDA5981 clean
+	-test -n "$(OPENRTL8196C_SDK)" && $(RM) -r $(OPENRTL8196C_SDK)/build/obk
 	-test -d ./sdk/OpenLN882H/build && cmake --build ./sdk/OpenLN882H/build --target clean
 	-test -d ./platforms/ESP-IDF/build-32 && cmake --build ./platforms/ESP-IDF/build-32 --target clean
 	-test -d ./platforms/ESP-IDF/build-c3 && cmake --build ./platforms/ESP-IDF/build-c3 --target clean

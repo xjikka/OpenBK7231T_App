@@ -10,7 +10,6 @@
 #include "../../httpserver/new_http.h"
 #include "../../driver/drv_public.h"
 #include "../../driver/drv_bl_shared.h"
-#include "../../driver/drv_hlw8112.h"
 
 static unsigned char *sector = (void *)0;
 int sectorlen = 0;
@@ -156,9 +155,7 @@ int myhttpclientcallback(httprequest_t* request){
         BL09XX_SaveEmeteringStatistics();
       }
 #endif
-#if ENABLE_DRIVER_HLW8112SPI
-	  HLW8112_Save_Statistics();
-#endif 
+	  DRV_SavePowerMeterDriverStatistics();
       rtos_delay_milliseconds(1000);
       bk_reboot();
       break;
@@ -231,21 +228,23 @@ int http_rest_post_flash(http_request_t* request, int startaddr, int maxaddr)
 	int towrite = request->bodylen;
 	char* writebuf = request->bodystart;
 	int writelen = request->bodylen;
+    int initial_addr = startaddr;
 
 	ADDLOG_DEBUG(LOG_FEATURE_OTA, "OTA post len %d", request->contentLength);
-
-	init_ota(startaddr);
 
 	if (request->contentLength >= 0)
 	{
 		towrite = request->contentLength;
 	}
 
-	if (writelen < 0 || (startaddr + writelen > maxaddr))
+	if (writelen < 0 || towrite <= 0 || startaddr < 0 || startaddr > maxaddr
+		|| towrite > maxaddr - startaddr)
 	{
-		ADDLOG_DEBUG(LOG_FEATURE_OTA, "ABORTED: %d bytes to write", writelen);
-		return http_rest_error(request, -20, "writelen < 0 or end > 0x200000");
+		ADDLOG_DEBUG(LOG_FEATURE_OTA, "ABORTED: %d bytes to write", towrite);
+		return http_rest_error(request, -20, "invalid length, or end beyond maxaddr");
 	}
+
+	init_ota(startaddr);
 
 	do
 	{
@@ -269,7 +268,7 @@ int http_rest_post_flash(http_request_t* request, int startaddr, int maxaddr)
 	http_setup(request, httpMimeTypeJson);
 	hprintf255(request, "{\"size\":%d}", total);
 	poststr(request, NULL);
-	CFG_IncrementOTACount();
+	if(initial_addr == START_ADR_OF_BK_PARTITION_OTA) CFG_IncrementOTACount();
 	return 0;
 }
 
