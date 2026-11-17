@@ -178,6 +178,10 @@ typedef struct tuyaMCUMapping_s {
 	float delta;
 	float delta2;
 	float delta3;
+#ifdef ENABLE_BL_MOVINGAVG
+	// moving average state for power and current channels
+	float avgValue;
+#endif
 	// TODO
 	//int mode;
 	// list
@@ -358,6 +362,9 @@ tuyaMCUMapping_t* TuyaMCU_MapIDToChannel(int dpId, int dpType, int channel, int 
 	cur->delta = delta;
 	cur->delta2 = delta2;
 	cur->delta3 = delta3;
+#ifdef ENABLE_BL_MOVINGAVG
+	cur->avgValue = 0;
+#endif
 	cur->inv = inv;
 	cur->prevValue = 0;
 	cur->channel = channel;
@@ -1184,6 +1191,26 @@ void TuyaMCU_ApplyMapping(tuyaMCUMapping_t* mapping, int dpID, int value) {
 	}
 
 	mapping->prevValue = mappedValue;
+
+#ifdef ENABLE_BL_MOVINGAVG
+	// smooth power and current only (setMovingAvg), counters must pass unchanged
+	switch (CHANNEL_GetType(mapping->channel))
+	{
+	case ChType_Power:
+	case ChType_Power_div10:
+	case ChType_Power_div100:
+	case ChType_Current_div100:
+	case ChType_Current_div1000:
+		mapping->avgValue = XJ_MovingAverage_float(mapping->avgValue, (mappedValue + mapping->delta) * mapping->mult);
+		mappedValue = (int)(mapping->avgValue + 0.5f);
+		// keep OnChannelChanged from sending the averaged value back to the MCU
+		mapping->prevValue = mappedValue;
+		CHANNEL_Set(mapping->channel, mappedValue, 0);
+		return;
+	default:
+		break;
+	}
+#endif
 
 	CHANNEL_Set(mapping->channel, ((mappedValue + mapping->delta) * mapping->mult), 0);
 }
